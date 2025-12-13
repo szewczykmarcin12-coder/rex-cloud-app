@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react-dom/client';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, User, Plus, Cloud, RefreshCw, Download, Upload } from 'lucide-react';
+import ReactDOM from 'react-dom/client';
 
 const API_URL = 'https://rex-cloud-backend.vercel.app/api/calendar';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
