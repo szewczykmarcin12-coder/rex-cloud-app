@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react-dom/client';
 import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, User, Plus, Cloud, RefreshCw, Download, Upload } from 'lucide-react';
 
 const API_URL = 'https://rex-cloud-backend.vercel.app/api/calendar';
@@ -168,3 +168,4 @@ export default function REXCloudApp() {
   
   return (<div className="min-h-screen bg-slate-50"><style>{'.animate-spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }'}</style><Sidebar isOpen={sidebar} onClose={() => setSidebar(false)} currentPage={page} onNavigate={setPage} user={user} onLogout={handleLogout} /><Header title={titles[page] || 'REX Cloud'} onMenuClick={() => setSidebar(true)} />{page === 'home' && <HomePage nextShift={nextShift} onNavigateToShifts={() => setPage('shifts')} vacation={vacation} onNavigateToHolidays={() => setPage('holidays')} />}{page === 'shifts' && <ShiftsPage date={date} onDateChange={setDate} shifts={shifts} onSync={syncFromGitHub} onSave={saveToGitHub} syncStatus={syncStatus} saveStatus={saveStatus} lastSync={lastSync} hasChanges={hasChanges} />}{page === 'preferences' && <PreferencesPage date={date} onDateChange={setDate} onAddShift={addShift} />}{page === 'holidays' && <HolidaysPage vacation={vacation} onAddVacation={addVacation} />}{page === 'workedTime' && <WorkedTimePage />}{page === 'userData' && <UserDataPage user={user} onUpdate={setUser} />}{page === 'about' && <AboutPage />}<div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 flex justify-around z-10">{[['home', Home, 'Home'], ['shifts', Calendar, 'Zmiany'], ['preferences', Plus, 'Wnioski'], ['holidays', Umbrella, 'Urlopy']].map(([id, Icon, label]) => (<button key={id} onClick={() => setPage(id)} className={`flex flex-col items-center p-2 ${page === id ? 'text-cyan-500' : 'text-slate-400'}`}><Icon size={24} /><span className="text-xs mt-1">{label}</span></button>))}</div></div>);
 }
+ReactDOM.createRoot(document.getElementById('root')).render(<REXCloudApp />);
