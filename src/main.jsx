@@ -1,23 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, User, Plus, Cloud, TrendingUp, DollarSign, BarChart3, Lock } from 'lucide-react';
+import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, User, Plus, Cloud, TrendingUp, DollarSign, BarChart3, Lock, Users, MapPin } from 'lucide-react';
 
 // ============================================
 // KONFIGURACJA API
 // ============================================
 const API_URL = 'https://rex-cloud-backend.vercel.app/api/calendar';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
-// Rozszerzone kolory pozycji - dodane SIN i LOB
 const positionColors = { 
-  'KIT': '#7CB342',  // Zielony - Kuchnia
-  'CAS': '#00A3E0',  // Niebieski - Kasa
-  'SUP': '#E74C3C',  // Czerwony - Wsparcie
-  'RUN': '#9C27B0',  // Fioletowy - Runner
-  'SIN': '#FF9800',  // Pomarańczowy - Sink
-  'LOB': '#607D8B'   // Szary stalowy - Lobby
+  'KIT': '#7CB342',
+  'CAS': '#00A3E0',
+  'SUP': '#E74C3C',
+  'RUN': '#9C27B0',
+  'SIN': '#FF9800',
+  'LOB': '#607D8B'
 };
 const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
 const dayNames = ['PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB', 'NIEDZ'];
+const dayNamesFull = ['niedziela', 'poniedziałek', 'wtorek', 'środa', 'czwartek', 'piątek', 'sobota'];
 
 // ============================================
 // LOCAL STORAGE HELPERS
@@ -41,11 +41,10 @@ const hashPassword = async (password) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-// Baza użytkowników - PIN przechowywany jako hash SHA-256
 const USERS = [
   {
     id: 'user_ms_001',
-    pinHash: '8eebb0799014a38852ffad12b8ba8c3fad326e1b92f83a01549c4e69b0bb9893', // hash PIN
+    pinHash: '8eebb0799014a38852ffad12b8ba8c3fad326e1b92f83a01549c4e69b0bb9893',
     profile: {
       name: 'MARCIN SZEWCZYK',
       initials: 'MS',
@@ -77,7 +76,7 @@ const authenticateUser = async (email, pin) => {
 // ============================================
 const parseICS = (icsContent) => {
   const shifts = [];
-  const dayNamesFull = ['NIEDZ', 'PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB'];
+  const dayNamesFullArr = ['NIEDZ', 'PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB'];
   icsContent.split('BEGIN:VEVENT').slice(1).forEach((block, i) => {
     try {
       const get = (f) => { const m = block.match(new RegExp(f + '[^:]*:(.+?)(?:\\r?\\n|$)')); return m ? m[1].trim() : null; };
@@ -86,10 +85,9 @@ const parseICS = (icsContent) => {
         const parseDate = (s) => { if (!s) return null; const c = s.replace('Z', '').replace(/[^0-9T]/g, ''); return new Date(parseInt(c.substring(0,4)), parseInt(c.substring(4,6))-1, parseInt(c.substring(6,8)), parseInt(c.substring(9,11))||0, parseInt(c.substring(11,13))||0); };
         const start = parseDate(dtstart), end = parseDate(dtend);
         if (start) {
-          // Rozszerzone rozpoznawanie pozycji - dodane SIN i LOB
           const posMatch = summary.match(/^(KIT|CAS|SUP|RUN|SIN|LOB)/i);
           const pos = posMatch ? posMatch[1].toUpperCase() : 'KIT';
-          shifts.push({ id: uid || 'shift-'+Date.now()+'-'+i, date: start.getFullYear()+'-'+String(start.getMonth()+1).padStart(2,'0')+'-'+String(start.getDate()).padStart(2,'0'), dayName: dayNamesFull[start.getDay()], dayNum: start.getDate(), shifts: [{ time: String(start.getHours()).padStart(2,'0')+':'+String(start.getMinutes()).padStart(2,'0')+' - '+(end ? String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0') : '23:00'), type: pos, color: positionColors[pos] || '#00A3E0' }], location: location.replace(/\\n/g, ' ') });
+          shifts.push({ id: uid || 'shift-'+Date.now()+'-'+i, date: start.getFullYear()+'-'+String(start.getMonth()+1).padStart(2,'0')+'-'+String(start.getDate()).padStart(2,'0'), dayName: dayNamesFullArr[start.getDay()], dayNum: start.getDate(), shifts: [{ time: String(start.getHours()).padStart(2,'0')+':'+String(start.getMinutes()).padStart(2,'0')+' - '+(end ? String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0') : '23:00'), type: pos, color: positionColors[pos] || '#00A3E0' }], location: location.replace(/\\n/g, ' ') });
         }
       }
     } catch(e) {}
@@ -103,9 +101,6 @@ const generateICS = (shifts) => {
   return 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//REX Cloud//PL\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\nX-WR-CALNAME:REX Cloud\n'+events+'\nEND:VCALENDAR';
 };
 
-// ============================================
-// HELPER - Minimalna data (dzisiaj)
-// ============================================
 const getTodayString = () => {
   const today = new Date();
   return today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
@@ -172,6 +167,210 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) =
 const Header = ({ title, onMenuClick }) => (<div className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-4 py-4 flex items-center justify-between sticky top-0 z-30"><div className="flex items-center gap-3"><Cloud size={24} /><span className="text-lg font-medium">{title}</span></div><button onClick={onMenuClick} className="p-2"><Menu size={24} /></button></div>);
 
 // ============================================
+// SWIPEABLE SHIFT CARD
+// ============================================
+const SwipeableShiftCard = ({ shift, onShowCoworkers }) => {
+  const [translateX, setTranslateX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const startX = useRef(0);
+  const currentX = useRef(0);
+  
+  const handleTouchStart = (e) => {
+    startX.current = e.touches[0].clientX;
+    setIsDragging(true);
+  };
+  
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    currentX.current = e.touches[0].clientX;
+    const diff = startX.current - currentX.current;
+    // Only allow swipe left (positive diff), max 80px
+    if (diff > 0) {
+      setTranslateX(Math.min(diff, 80));
+    } else {
+      setTranslateX(0);
+    }
+  };
+  
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    // Snap to open or closed
+    if (translateX > 40) {
+      setTranslateX(70);
+    } else {
+      setTranslateX(0);
+    }
+  };
+  
+  const handleMouseDown = (e) => {
+    startX.current = e.clientX;
+    setIsDragging(true);
+  };
+  
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    currentX.current = e.clientX;
+    const diff = startX.current - currentX.current;
+    if (diff > 0) {
+      setTranslateX(Math.min(diff, 80));
+    } else {
+      setTranslateX(0);
+    }
+  };
+  
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    if (translateX > 40) {
+      setTranslateX(70);
+    } else {
+      setTranslateX(0);
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      if (translateX > 40) {
+        setTranslateX(70);
+      } else {
+        setTranslateX(0);
+      }
+    }
+  };
+  
+  const isRevealed = translateX > 40;
+  
+  return (
+    <div className="relative overflow-hidden rounded-xl shadow-sm mb-3">
+      {/* Action button behind */}
+      <div className="absolute right-0 top-0 bottom-0 w-20 bg-cyan-500 flex items-center justify-center rounded-r-xl">
+        <button 
+          onClick={() => onShowCoworkers(shift)}
+          className="w-full h-full flex items-center justify-center"
+        >
+          <Users size={28} className="text-white" />
+        </button>
+      </div>
+      
+      {/* Main card */}
+      <div 
+        className={`relative bg-white border-l-4 border-cyan-400 p-4 transition-all duration-200 ${isRevealed ? 'bg-cyan-50' : ''}`}
+        style={{ transform: `translateX(-${translateX}px)` }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div className="flex gap-4">
+          <div className={`rounded-xl px-3 py-2 text-center min-w-14 ${isRevealed ? 'bg-cyan-100' : 'bg-cyan-50'}`}>
+            <p className="text-xs text-cyan-600">{shift.dayName}</p>
+            <p className="text-xl font-bold">{shift.dayNum}.{String(new Date(shift.date).getMonth()+1).padStart(2,'0')}</p>
+          </div>
+          <div className="flex-1">
+            {shift.shifts.map((s,i) => (
+              <div key={i} className="flex items-center gap-2 mb-1">
+                <span>{s.time}</span>
+                <span className="w-2 h-2 rounded-full" style={{backgroundColor: s.color}} />
+                <span className="text-sm text-slate-600">{s.type}</span>
+              </div>
+            ))}
+            <p className="text-slate-500 text-sm mt-1">{shift.location}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// COWORKERS MODAL
+// ============================================
+const CoworkersModal = ({ shift, onClose }) => {
+  if (!shift) return null;
+  
+  const shiftDate = new Date(shift.date);
+  const formattedDate = `${dayNamesFull[shiftDate.getDay()]}, ${shiftDate.getDate()} ${monthNames[shiftDate.getMonth()].toLowerCase()} ${shiftDate.getFullYear()}`;
+  
+  // Placeholder - brak współpracowników
+  const coworkers = [];
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+      <div className="bg-slate-50 w-full max-w-lg rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="bg-white p-4 border-b">
+          <h3 className="text-xl font-semibold text-slate-700">Współpracownicy ze zmiany</h3>
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Shift info */}
+          <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                <MapPin size={20} className="text-slate-500" />
+              </div>
+              <span className="text-slate-700">{shift.location}</span>
+            </div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                <Calendar size={20} className="text-slate-500" />
+              </div>
+              <span className="text-slate-700">{formattedDate}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                <Clock size={20} className="text-slate-500" />
+              </div>
+              <span className="text-slate-700">{shift.shifts[0].time}</span>
+            </div>
+          </div>
+          
+          {/* Coworkers list */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <h4 className="text-lg font-semibold text-slate-700 mb-4">Współpracownicy ze zmiany</h4>
+            
+            {coworkers.length === 0 ? (
+              <div className="text-center py-8">
+                <Users size={48} className="text-slate-200 mx-auto mb-3" />
+                <p className="text-slate-400">Brak informacji o współpracownikach</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {coworkers.map((cw, i) => (
+                  <div key={i} className="flex items-center gap-3 py-2">
+                    <div className="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center">
+                      <User size={24} className="text-slate-400" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-700">{cw.name}</p>
+                      <p className="text-cyan-500 text-sm">{cw.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Footer */}
+        <div className="p-4 bg-white border-t">
+          <button 
+            onClick={onClose}
+            className="w-full py-3 bg-cyan-500 text-white font-semibold rounded-xl"
+          >
+            Ok
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
 // PAGES
 // ============================================
 const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHolidays }) => {
@@ -187,8 +386,41 @@ const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHoliday
 
 const ShiftsPage = ({ date, onDateChange, shifts }) => {
   const [selectedDay, setSelectedDay] = useState(null);
-  const filtered = shifts.filter(s => { const d = new Date(s.date); return (!selectedDay || d.getDate() === selectedDay) && d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear(); }).sort((a, b) => new Date(a.date) - new Date(b.date));
-  return (<div className="flex flex-col min-h-screen bg-slate-50 pb-20"><CalendarView date={date} onDateChange={onDateChange} shifts={shifts} onDayClick={setSelectedDay} selectedDay={selectedDay} /><div className="flex-1 p-4 space-y-3">{filtered.length === 0 ? (<div className="text-center py-12"><Cloud size={48} className="text-slate-300 mx-auto mb-4" /><p className="text-slate-500">Brak zmian w tym okresie</p></div>) : filtered.map(shift => (<div key={shift.id} className="bg-white rounded-xl shadow-sm border-l-4 border-cyan-400 p-4"><div className="flex gap-4"><div className="bg-cyan-50 rounded-xl px-3 py-2 text-center min-w-14"><p className="text-xs text-cyan-600">{shift.dayName}</p><p className="text-xl font-bold">{shift.dayNum}.{String(new Date(shift.date).getMonth()+1).padStart(2,'0')}</p></div><div className="flex-1">{shift.shifts.map((s,i) => (<div key={i} className="flex items-center gap-2 mb-1"><span>{s.time}</span><span className="w-2 h-2 rounded-full" style={{backgroundColor: s.color}} /><span className="text-sm text-slate-600">{s.type}</span></div>))}<p className="text-slate-500 text-sm mt-1">{shift.location}</p></div></div></div>))}</div></div>);
+  const [selectedShift, setSelectedShift] = useState(null);
+  
+  const filtered = shifts.filter(s => { 
+    const d = new Date(s.date); 
+    return (!selectedDay || d.getDate() === selectedDay) && d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear(); 
+  }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  return (
+    <div className="flex flex-col min-h-screen bg-slate-50 pb-20">
+      <CalendarView date={date} onDateChange={onDateChange} shifts={shifts} onDayClick={setSelectedDay} selectedDay={selectedDay} />
+      <div className="flex-1 p-4">
+        {filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <Cloud size={48} className="text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-500">Brak zmian w tym okresie</p>
+          </div>
+        ) : (
+          filtered.map(shift => (
+            <SwipeableShiftCard 
+              key={shift.id} 
+              shift={shift} 
+              onShowCoworkers={setSelectedShift} 
+            />
+          ))
+        )}
+      </div>
+      
+      {selectedShift && (
+        <CoworkersModal 
+          shift={selectedShift} 
+          onClose={() => setSelectedShift(null)} 
+        />
+      )}
+    </div>
+  );
 };
 
 const PreferencesPage = ({ date, onDateChange, onAddShift }) => {
@@ -198,7 +430,6 @@ const PreferencesPage = ({ date, onDateChange, onAddShift }) => {
   const todayStr = getTodayString();
   const [newPref, setNewPref] = useState({ date: todayStr, type: 'Pracuj', position: 'KIT', timeFrom: '08:00', timeTo: '16:00' });
   const types = ['Pracuj', 'Nie pracuj', 'Nie pracuj wcześniej', 'Nie pracuj później niż', 'Praca w godzinach'];
-  // Rozszerzona lista pozycji - dodane SIN i LOB
   const positions = [
     { id: 'KIT', name: 'KIT - Kuchnia' }, 
     { id: 'CAS', name: 'CAS - Kasa' }, 
@@ -212,7 +443,6 @@ const PreferencesPage = ({ date, onDateChange, onAddShift }) => {
   const needsPos = newPref.type !== 'Nie pracuj';
   
   const handleAdd = () => {
-    // Walidacja - nie można dodać zmiany w przeszłości
     if (newPref.date < todayStr) {
       setError('Nie można dodać zmiany w przeszłości');
       return;
@@ -221,12 +451,12 @@ const PreferencesPage = ({ date, onDateChange, onAddShift }) => {
     
     const d = new Date(newPref.date); 
     const dayNamesShort = ['NI', 'PO', 'WT', 'ŚR', 'CZ', 'PT', 'SO']; 
-    const dayNamesFull = ['NIEDZ', 'PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB']; 
+    const dayNamesFullArr = ['NIEDZ', 'PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB']; 
     const pref = { id: Date.now(), date: newPref.date, dayName: dayNamesShort[d.getDay()], dayNum: d.getDate(), type: newPref.type, position: needsPos ? newPref.position : null, timeFrom: needsFrom ? newPref.timeFrom : null, timeTo: needsTo ? newPref.timeTo : null }; 
     setPrefs([...prefs, pref]); 
     if (newPref.type !== 'Nie pracuj') { 
       const time = newPref.type === 'Praca w godzinach' ? newPref.timeFrom+' - '+newPref.timeTo : newPref.type === 'Nie pracuj wcześniej' ? newPref.timeFrom+' - 23:00' : newPref.type === 'Nie pracuj później niż' ? '06:00 - '+newPref.timeTo : '08:00 - 16:00'; 
-      onAddShift({ id: Date.now()+1, date: newPref.date, dayName: dayNamesFull[d.getDay()], dayNum: d.getDate(), shifts: [{ time, type: newPref.position, color: positionColors[newPref.position] }], location: DEFAULT_LOCATION }); 
+      onAddShift({ id: Date.now()+1, date: newPref.date, dayName: dayNamesFullArr[d.getDay()], dayNum: d.getDate(), shifts: [{ time, type: newPref.position, color: positionColors[newPref.position] }], location: DEFAULT_LOCATION }); 
     } 
     setShowModal(false); 
     setNewPref({ date: todayStr, type: 'Pracuj', position: 'KIT', timeFrom: '08:00', timeTo: '16:00' }); 
@@ -257,12 +487,10 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
 // ============================================
 const calculateHours = (timeStr) => { try { const [start, end] = timeStr.split(' - '); const [sh, sm] = start.split(':').map(Number); const [eh, em] = end.split(':').map(Number); let hours = eh - sh + (em - sm) / 60; if (hours < 0) hours += 24; return hours; } catch (e) { return 0; } };
 const BarChart = ({ data, maxValue, color = '#00A3E0' }) => (<div className="flex items-end justify-between gap-2 h-32">{data.map((item, i) => { const height = maxValue > 0 ? (item.value / maxValue) * 100 : 0; return (<div key={i} className="flex flex-col items-center flex-1"><span className="text-xs font-semibold mb-1">{item.value.toFixed(0)}h</span><div className="w-full rounded-t-lg transition-all duration-500" style={{ height: `${Math.max(height, 5)}%`, backgroundColor: color, opacity: i === data.length - 1 ? 1 : 0.6 }} /><span className="text-xs text-slate-500 mt-2">{item.label}</span></div>); })}</div>);
-// Rozszerzone kolory w PositionBreakdown - dodane SIN i LOB
 const PositionBreakdown = ({ positions }) => { const colors = { 'KIT': '#7CB342', 'CAS': '#00A3E0', 'SUP': '#E74C3C', 'RUN': '#9C27B0', 'SIN': '#FF9800', 'LOB': '#607D8B' }; const total = Object.values(positions).reduce((a, b) => a + b, 0); if (total === 0) return null; return (<div className="space-y-2">{Object.entries(positions).filter(([_, hours]) => hours > 0).map(([pos, hours]) => { const percent = (hours / total) * 100; return (<div key={pos} className="flex items-center gap-3"><span className="text-sm font-medium w-10">{pos}</span><div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${percent}%`, backgroundColor: colors[pos] }} /></div><span className="text-sm text-slate-600 w-16 text-right">{hours.toFixed(1)}h</span></div>); })}</div>); };
 
 const StatisticsPage = ({ shifts, hourlyRate = 0 }) => {
   const now = new Date(); const currentMonth = now.getMonth(); const currentYear = now.getFullYear();
-  // Rozszerzone pozycje w statystykach - dodane SIN i LOB
   const monthsData = useMemo(() => { const months = []; for (let i = 2; i >= 0; i--) { let month = currentMonth - i; let year = currentYear; if (month < 0) { month += 12; year -= 1; } const monthShifts = shifts.filter(s => { const d = new Date(s.date); return d.getMonth() === month && d.getFullYear() === year; }); let totalHours = 0, shiftsCount = 0; const positions = { KIT: 0, CAS: 0, SUP: 0, RUN: 0, SIN: 0, LOB: 0 }; monthShifts.forEach(shift => { shift.shifts.forEach(s => { const hours = calculateHours(s.time); totalHours += hours; shiftsCount++; if (positions.hasOwnProperty(s.type)) positions[s.type] += hours; }); }); months.push({ month, year, label: monthNames[month].substring(0, 3), fullLabel: monthNames[month], totalHours, shiftsCount, positions, earnings: totalHours * hourlyRate }); } return months; }, [shifts, currentMonth, currentYear, hourlyRate]);
   const currentMonthData = monthsData[2]; const totalHours3Months = monthsData.reduce((sum, m) => sum + m.totalHours, 0); const totalEarnings3Months = totalHours3Months * hourlyRate; const avgHoursPerMonth = totalHours3Months / 3; const chartData = monthsData.map(m => ({ label: m.label, value: m.totalHours })); const maxChartValue = Math.max(...chartData.map(d => d.value), 1);
   return (<div className="min-h-screen bg-slate-50 p-4 pb-24 space-y-4"><div className="bg-white rounded-2xl shadow-sm p-4"><div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">{currentMonthData.fullLabel} {currentMonthData.year}</h3><Clock size={24} className="text-cyan-500" /></div><div className="grid grid-cols-2 gap-4"><div className="bg-cyan-50 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-cyan-600">{currentMonthData.totalHours.toFixed(1)}</p><p className="text-sm text-cyan-700">godzin</p></div><div className="bg-emerald-50 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-emerald-600">{currentMonthData.shiftsCount}</p><p className="text-sm text-emerald-700">zmian</p></div></div>{hourlyRate > 0 && (<div className="mt-4 bg-amber-50 rounded-xl p-4"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><DollarSign size={20} className="text-amber-600" /><span className="text-sm text-amber-700">Prognozowane wynagrodzenie</span></div><span className="text-xl font-bold text-amber-600">{currentMonthData.earnings.toFixed(2)} zł</span></div></div>)}</div><div className="bg-white rounded-2xl shadow-sm p-4"><div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Godziny - ostatnie 3 miesiące</h3><BarChart3 size={24} className="text-cyan-500" /></div><BarChart data={chartData} maxValue={maxChartValue} /><div className="mt-4 pt-4 border-t flex justify-between text-sm"><div><span className="text-slate-500">Łącznie:</span><span className="font-semibold ml-2">{totalHours3Months.toFixed(1)}h</span></div><div><span className="text-slate-500">Średnia/mies.:</span><span className="font-semibold ml-2">{avgHoursPerMonth.toFixed(1)}h</span></div></div></div><div className="bg-white rounded-2xl shadow-sm p-4"><div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Podział wg stanowisk</h3><TrendingUp size={24} className="text-cyan-500" /></div><p className="text-sm text-slate-500 mb-3">{currentMonthData.fullLabel}</p>{currentMonthData.totalHours > 0 ? <PositionBreakdown positions={currentMonthData.positions} /> : <p className="text-slate-400 text-center py-4">Brak danych</p>}</div>{hourlyRate > 0 && (<div className="bg-white rounded-2xl shadow-sm p-4"><div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Podsumowanie zarobków</h3><DollarSign size={24} className="text-emerald-500" /></div><div className="space-y-3">{monthsData.map((m, i) => (<div key={i} className="flex items-center justify-between py-2 border-b last:border-0"><div><p className="font-medium">{m.fullLabel}</p><p className="text-sm text-slate-500">{m.totalHours.toFixed(1)}h × {hourlyRate.toFixed(2)} zł</p></div><span className="text-lg font-semibold text-emerald-600">{m.earnings.toFixed(2)} zł</span></div>))}<div className="flex items-center justify-between pt-2 mt-2 border-t-2"><span className="font-semibold">Razem (3 mies.)</span><span className="text-xl font-bold text-emerald-600">{totalEarnings3Months.toFixed(2)} zł</span></div></div></div>)}{hourlyRate === 0 && (<div className="bg-amber-50 rounded-2xl p-4 text-center"><DollarSign size={32} className="text-amber-400 mx-auto mb-2" /><p className="text-amber-700 text-sm">Dodaj stawkę godzinową w zakładce "Dane użytkownika"</p></div>)}</div>);
@@ -286,7 +514,7 @@ const UserDataPage = ({ user, onUpdate, userId }) => {
   return (<div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-6 text-center"><div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3"><span className="text-cyan-600 font-bold text-2xl">{user.initials}</span></div><h2 className="text-white text-xl font-semibold">{form.name}</h2><p className="text-cyan-100 text-sm mt-1">Konto zabezpieczone</p></div><div className="p-4 space-y-4"><div><label className="block text-sm font-medium text-slate-600 mb-1">Imię i nazwisko</label><input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="Imię i nazwisko" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Email</label><input value={form.email} disabled className="w-full p-3 bg-slate-100 rounded-xl text-slate-500" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Telefon</label><input type="tel" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="+48 123 456 789" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Adres</label><input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="Adres zamieszkania" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Stawka godzinowa (zł)</label><input type="number" step="0.01" min="0" value={form.hourlyRate || ''} onChange={(e) => setForm({...form, hourlyRate: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="np. 27.70" /><p className="text-xs text-slate-400 mt-1">Używana do obliczania prognozowanych zarobków</p></div><button onClick={save} className={`w-full py-3 rounded-xl font-semibold ${saved ? 'bg-green-500 text-white' : 'bg-cyan-500 text-white'}`}>{saved ? '✓ Zapisano' : 'Zapisz zmiany'}</button></div></div></div>);
 };
 
-const AboutPage = () => (<div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-8 text-center"><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-light">REX <span className="text-cyan-200">Cloud</span></span><p className="text-cyan-100 mt-2">v3.1.0</p></div><div className="p-6 space-y-4"><div className="bg-green-50 rounded-xl p-4"><div className="flex items-center gap-2 mb-2"><Lock size={18} className="text-green-600" /><span className="font-semibold text-green-800">Bezpieczeństwo</span></div><ul className="text-sm text-green-700 space-y-1"><li>• Hasła hashowane SHA-256</li><li>• Dane zapisywane lokalnie</li><li>• Automatyczna synchronizacja</li></ul></div><p className="text-slate-500 text-sm text-center">© 2025 REX Cloud by M. Szewczyk</p></div></div></div>);
+const AboutPage = () => (<div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-8 text-center"><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-light">REX <span className="text-cyan-200">Cloud</span></span><p className="text-cyan-100 mt-2">v3.2.0</p></div><div className="p-6 space-y-4"><div className="bg-green-50 rounded-xl p-4"><div className="flex items-center gap-2 mb-2"><Lock size={18} className="text-green-600" /><span className="font-semibold text-green-800">Bezpieczeństwo</span></div><ul className="text-sm text-green-700 space-y-1"><li>• Hasła hashowane SHA-256</li><li>• Dane zapisywane lokalnie</li><li>• Automatyczna synchronizacja</li></ul></div><p className="text-slate-500 text-sm text-center">© 2025 REX Cloud by M. Szewczyk</p></div></div></div>);
 
 // ============================================
 // MAIN APP
