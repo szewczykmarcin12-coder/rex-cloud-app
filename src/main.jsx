@@ -149,7 +149,7 @@ const LoginScreen = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{background: `linear-gradient(to bottom, ${colors.primary.darkest}, ${colors.primary.dark})`}}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{background: `linear-gradient(to bottom, #051845, ${colors.primary.darkest})`}}>
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-12">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{backgroundColor: colors.primary.medium}}><Cloud size={32} className="text-white" /></div>
@@ -179,6 +179,21 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
   const days = []; for (let i = 0; i < startDay; i++) days.push({ day: new Date(year, month, 0).getDate() - startDay + i + 1, current: false }); for (let i = 1; i <= lastDay.getDate(); i++) days.push({ day: i, current: true }); for (let i = 1; days.length < 42; i++) days.push({ day: i, current: false });
   const getShifts = (d) => { const ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); return shifts.find(s => s.date === ds)?.shifts || []; };
   const today = new Date(), isToday = (d) => today.getDate() === d && today.getMonth() === month && today.getFullYear() === year;
+  
+  // Logika podświetlania: jeśli jest wybrany dzień, pokazuj tylko jego; jeśli nie, pokazuj dzisiejszy
+  const getHighlightStyle = (item) => {
+    if (!item.current) return {};
+    if (selectedDay !== null) {
+      // Gdy jest wybrany dzień - podświetl tylko go
+      if (item.day === selectedDay) return {backgroundColor: colors.primary.bg, color: colors.primary.dark};
+      return {};
+    } else {
+      // Gdy nie ma wybranego - podświetl dzisiejszy
+      if (isToday(item.day)) return {backgroundColor: colors.primary.medium, color: 'white'};
+      return {};
+    }
+  };
+  
   return (
     <div className="bg-white">
       <div className="flex items-center justify-between px-4 py-4 border-b">
@@ -187,7 +202,7 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
         <button onClick={() => onDateChange(new Date(year, month+1, 1))} className="p-2"><ChevronRight size={24} /></button>
       </div>
       <div className="grid grid-cols-7 gap-1 p-2">
-        {dayNames.map(d => <div key={d} className="text-center text-xs font-medium text-slate-500 py-2">{d}</div>)}
+        {dayNames.map(d => <div key={d} className="text-center text-xs font-medium py-2 rounded-lg" style={{backgroundColor: colors.primary.bg, color: colors.primary.light}}>{d}</div>)}
         {days.map((item, i) => { 
           const sh = item.current ? getShifts(item.day) : []; 
           return (
@@ -195,7 +210,7 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
               key={i} 
               onClick={() => item.current && onDayClick(item.day === selectedDay ? null : item.day)} 
               className={`flex flex-col items-center py-2 rounded-full ${!item.current ? 'text-slate-300' : ''}`}
-              style={item.current && selectedDay === item.day ? {backgroundColor: colors.primary.bg, color: colors.primary.dark} : item.current && isToday(item.day) ? {backgroundColor: colors.primary.medium, color: 'white'} : {}}
+              style={getHighlightStyle(item)}
             >
               <span className="text-sm font-medium">{item.day}</span>
               {sh.length > 0 && item.current && <div className="flex gap-0.5 mt-1">{sh.slice(0,3).map((s,j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: s.color}} />)}</div>}
@@ -236,7 +251,7 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) =
 };
 
 const Header = ({ title, onMenuClick }) => (
-  <div className="text-white px-4 py-4 flex items-center justify-between sticky top-0 z-30" style={{background: `linear-gradient(to right, ${colors.primary.darkest}, ${colors.primary.dark})`}}>
+  <div className="text-white px-4 py-4 flex items-center justify-between sticky top-0 z-30" style={{background: `linear-gradient(to right, ${colors.primary.dark}, ${colors.primary.darkest})`}}>
     <div className="flex items-center gap-3"><Cloud size={24} /><span className="text-lg font-medium">{title}</span></div>
     <button onClick={onMenuClick} className="p-2"><Menu size={24} /></button>
   </div>
@@ -730,7 +745,7 @@ const UserDataPage = ({ user, onUpdate, userId }) => {
           <div><label className="block text-sm font-medium text-slate-600 mb-1">Telefon</label><input type="tel" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="+48 123 456 789" /></div>
           <div><label className="block text-sm font-medium text-slate-600 mb-1">Adres</label><input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="Adres zamieszkania" /></div>
           <div><label className="block text-sm font-medium text-slate-600 mb-1">Stawka godzinowa (zł)</label><input type="number" step="0.01" min="0" value={form.hourlyRate || ''} onChange={(e) => setForm({...form, hourlyRate: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="np. 27.70" /><p className="text-xs text-slate-400 mt-1">Używana do obliczania prognozowanych zarobków</p></div>
-          <button onClick={save} className="w-full py-3 rounded-xl font-semibold text-white" style={{backgroundColor: saved ? '#10b981' : colors.primary.medium}}>{saved ? '✓ Zapisano' : 'Zapisz zmiany'}</button>
+          <button onClick={save} className="w-full py-3 rounded-xl font-semibold text-white" style={{backgroundColor: saved ? colors.accent.dark : colors.primary.medium}}>{saved ? '✓ Zapisano' : 'Zapisz zmiany'}</button>
         </div>
       </div>
     </div>
@@ -743,7 +758,7 @@ const AboutPage = () => (
       <div className="p-8 text-center" style={{background: `linear-gradient(to right, ${colors.primary.darkest}, ${colors.primary.dark})`}}>
         <Cloud size={40} className="text-white mx-auto mb-4" />
         <span className="text-white text-2xl font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span></span>
-        <p className="mt-2" style={{color: colors.primary.bg}}>v3.4.0</p>
+        <p className="mt-2" style={{color: colors.primary.bg}}>v3.4.1</p>
       </div>
       <div className="p-6 space-y-4">
         <div className="rounded-xl p-4" style={{backgroundColor: colors.primary.bg}}>
