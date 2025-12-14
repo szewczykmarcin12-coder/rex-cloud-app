@@ -5,11 +5,22 @@ import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, Lo
 // ============================================
 // KONFIGURACJA API
 // ============================================
-const API_BASE_URL = 'https://rex-cloud-backend.vercel.app/api';
+const API_URL = 'https://rex-cloud-backend.vercel.app/api/calendar';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 const positionColors = { 'KIT': '#7CB342', 'CAS': '#00A3E0', 'SUP': '#E74C3C', 'RUN': '#9C27B0' };
 const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
 const dayNames = ['PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB', 'NIEDZ'];
+
+// ============================================
+// LOCAL STORAGE HELPERS
+// ============================================
+const saveToStorage = (key, data) => {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { console.error('Storage save error:', e); }
+};
+
+const loadFromStorage = (key, defaultValue = null) => {
+  try { const data = localStorage.getItem(key); return data ? JSON.parse(data) : defaultValue; } catch (e) { return defaultValue; }
+};
 
 // ============================================
 // SYSTEM UŻYTKOWNIKÓW Z HASHOWANIEM
@@ -22,12 +33,11 @@ const hashPassword = async (password) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-// Baza użytkowników - PIN jest przechowywany jako hash SHA-256
+// Baza użytkowników - PIN przechowywany jako hash SHA-256
 const USERS = [
   {
     id: 'user_ms_001',
     pinHash: '8eebb0799014a38852ffad12b8ba8c3fad326e1b92f83a01549c4e69b0bb9893', // hash PIN "4917"
-    calendarId: 'kalendarz_ms', // unikalny plik kalendarza dla tego użytkownika
     profile: {
       name: 'MARCIN SZEWCZYK',
       initials: 'MS',
@@ -46,7 +56,10 @@ const authenticateUser = async (email, pin) => {
   
   for (const user of USERS) {
     if (user.profile.email.toLowerCase() === emailLower && user.pinHash === pinHash) {
-      return { id: user.id, calendarId: user.calendarId, profile: { ...user.profile } };
+      // Załaduj zapisane dane profilu z localStorage (jeśli istnieją)
+      const savedProfile = loadFromStorage(`profile_${user.id}`);
+      const profile = savedProfile ? { ...user.profile, ...savedProfile } : { ...user.profile };
+      return { id: user.id, profile };
     }
   }
   return null;
@@ -92,25 +105,12 @@ const LoginScreen = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !pin) {
-      setError('Wprowadź email i PIN');
-      return;
-    }
-    
-    setLoading(true);
-    setError('');
-    
+    if (!email || !pin) { setError('Wprowadź email i PIN'); return; }
+    setLoading(true); setError('');
     try {
       const user = await authenticateUser(email, pin);
-      if (user) {
-        onLogin(user);
-      } else {
-        setError('Nieprawidłowy email lub PIN');
-      }
-    } catch (e) {
-      setError('Błąd logowania');
-    }
-    
+      if (user) { onLogin(user); } else { setError('Nieprawidłowy email lub PIN'); }
+    } catch (e) { setError('Błąd logowania'); }
     setLoading(false);
   };
 
@@ -118,62 +118,19 @@ const LoginScreen = ({ onLogin }) => {
     <div className="min-h-screen bg-gradient-to-b from-slate-800 to-slate-900 flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-12">
-          <div className="w-14 h-14 bg-cyan-500 rounded-xl flex items-center justify-center">
-            <Cloud size={32} className="text-white" />
-          </div>
-          <div>
-            <span className="text-white text-3xl font-light">REX</span>
-            <span className="text-cyan-300 text-3xl font-light ml-2">Cloud</span>
-          </div>
+          <div className="w-14 h-14 bg-cyan-500 rounded-xl flex items-center justify-center"><Cloud size={32} className="text-white" /></div>
+          <div><span className="text-white text-3xl font-light">REX</span><span className="text-cyan-300 text-3xl font-light ml-2">Cloud</span></div>
         </div>
-        
         <div className="bg-white rounded-2xl p-8">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Lock size={20} className="text-cyan-500" />
-            <h2 className="text-2xl font-semibold">Zaloguj się</h2>
-          </div>
-          
+          <div className="flex items-center justify-center gap-2 mb-6"><Lock size={20} className="text-cyan-500" /><h2 className="text-2xl font-semibold">Zaloguj się</h2></div>
           {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
-          
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border focus:border-cyan-500 outline-none"
-                placeholder="twoj@email.com"
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">PIN</label>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                className="w-full px-4 py-3 rounded-xl border focus:border-cyan-500 outline-none"
-                placeholder="••••"
-                maxLength={4}
-                disabled={loading}
-              />
-            </div>
-            <button 
-              onClick={handleLogin} 
-              disabled={loading}
-              className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-300 text-white font-semibold py-3 rounded-xl transition-colors"
-            >
-              {loading ? 'Logowanie...' : 'Zaloguj się'}
-            </button>
+            <div><label className="block text-sm text-slate-600 mb-1">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-xl border focus:border-cyan-500 outline-none" placeholder="twoj@email.com" disabled={loading} /></div>
+            <div><label className="block text-sm text-slate-600 mb-1">PIN</label><input type="password" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full px-4 py-3 rounded-xl border focus:border-cyan-500 outline-none" placeholder="••••" maxLength={4} disabled={loading} /></div>
+            <button onClick={handleLogin} disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-300 text-white font-semibold py-3 rounded-xl transition-colors">{loading ? 'Logowanie...' : 'Zaloguj się'}</button>
           </div>
-          
-          <p className="text-xs text-slate-400 text-center mt-4">
-            🔒 Połączenie szyfrowane
-          </p>
+          <p className="text-xs text-slate-400 text-center mt-4">🔒 Połączenie szyfrowane</p>
         </div>
-        <p className="text-slate-400 text-center text-sm mt-8">© 2025 REX Cloud by M. Szewczyk</p>
       </div>
     </div>
   );
@@ -249,9 +206,7 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
 // STATISTICS PAGE
 // ============================================
 const calculateHours = (timeStr) => { try { const [start, end] = timeStr.split(' - '); const [sh, sm] = start.split(':').map(Number); const [eh, em] = end.split(':').map(Number); let hours = eh - sh + (em - sm) / 60; if (hours < 0) hours += 24; return hours; } catch (e) { return 0; } };
-
 const BarChart = ({ data, maxValue, color = '#00A3E0' }) => (<div className="flex items-end justify-between gap-2 h-32">{data.map((item, i) => { const height = maxValue > 0 ? (item.value / maxValue) * 100 : 0; return (<div key={i} className="flex flex-col items-center flex-1"><span className="text-xs font-semibold mb-1">{item.value.toFixed(0)}h</span><div className="w-full rounded-t-lg transition-all duration-500" style={{ height: `${Math.max(height, 5)}%`, backgroundColor: color, opacity: i === data.length - 1 ? 1 : 0.6 }} /><span className="text-xs text-slate-500 mt-2">{item.label}</span></div>); })}</div>);
-
 const PositionBreakdown = ({ positions }) => { const colors = { 'KIT': '#7CB342', 'CAS': '#00A3E0', 'SUP': '#E74C3C', 'RUN': '#9C27B0' }; const total = Object.values(positions).reduce((a, b) => a + b, 0); if (total === 0) return null; return (<div className="space-y-2">{Object.entries(positions).filter(([_, hours]) => hours > 0).map(([pos, hours]) => { const percent = (hours / total) * 100; return (<div key={pos} className="flex items-center gap-3"><span className="text-sm font-medium w-10">{pos}</span><div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${percent}%`, backgroundColor: colors[pos] }} /></div><span className="text-sm text-slate-600 w-16 text-right">{hours.toFixed(1)}h</span></div>); })}</div>); };
 
 const StatisticsPage = ({ shifts, hourlyRate = 0 }) => {
@@ -264,14 +219,23 @@ const StatisticsPage = ({ shifts, hourlyRate = 0 }) => {
 // ============================================
 // USER DATA PAGE
 // ============================================
-const UserDataPage = ({ user, onUpdate }) => {
+const UserDataPage = ({ user, onUpdate, userId }) => {
   const [form, setForm] = useState(user);
   const [saved, setSaved] = useState(false);
-  const save = () => { const updatedUser = { ...form, hourlyRate: parseFloat(form.hourlyRate) || 0, initials: form.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() }; onUpdate(updatedUser); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  
+  const save = () => {
+    const updatedUser = { ...form, hourlyRate: parseFloat(form.hourlyRate) || 0, initials: form.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() };
+    onUpdate(updatedUser);
+    // Zapisz do localStorage
+    saveToStorage(`profile_${userId}`, updatedUser);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+  
   return (<div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-6 text-center"><div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3"><span className="text-cyan-600 font-bold text-2xl">{user.initials}</span></div><h2 className="text-white text-xl font-semibold">{form.name}</h2><p className="text-cyan-100 text-sm mt-1">🔒 Konto zabezpieczone</p></div><div className="p-4 space-y-4"><div><label className="block text-sm font-medium text-slate-600 mb-1">Imię i nazwisko</label><input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="Imię i nazwisko" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Email</label><input value={form.email} disabled className="w-full p-3 bg-slate-100 rounded-xl text-slate-500" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Telefon</label><input type="tel" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="+48 123 456 789" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Adres</label><input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="Adres zamieszkania" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Stawka godzinowa (zł)</label><input type="number" step="0.01" min="0" value={form.hourlyRate || ''} onChange={(e) => setForm({...form, hourlyRate: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="np. 27.70" /><p className="text-xs text-slate-400 mt-1">Używana do obliczania prognozowanych zarobków</p></div><button onClick={save} className={`w-full py-3 rounded-xl font-semibold ${saved ? 'bg-green-500 text-white' : 'bg-cyan-500 text-white'}`}>{saved ? '✓ Zapisano' : 'Zapisz zmiany'}</button></div></div></div>);
 };
 
-const AboutPage = () => (<div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-8 text-center"><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-light">REX <span className="text-cyan-200">Cloud</span></span><p className="text-cyan-100 mt-2">v3.0.0 - Secure</p></div><div className="p-6 space-y-4"><div className="bg-green-50 rounded-xl p-4"><div className="flex items-center gap-2 mb-2"><Lock size={18} className="text-green-600" /><span className="font-semibold text-green-800">Bezpieczeństwo</span></div><ul className="text-sm text-green-700 space-y-1"><li>• Hasła hashowane SHA-256</li><li>• Grafik przypisany do konta</li><li>• Automatyczna synchronizacja</li></ul></div><p className="text-slate-500 text-sm text-center">© 2025 REX Cloud by M. Szewczyk</p></div></div></div>);
+const AboutPage = () => (<div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-8 text-center"><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-light">REX <span className="text-cyan-200">Cloud</span></span><p className="text-cyan-100 mt-2">v3.0.0 - Secure</p></div><div className="p-6 space-y-4"><div className="bg-green-50 rounded-xl p-4"><div className="flex items-center gap-2 mb-2"><Lock size={18} className="text-green-600" /><span className="font-semibold text-green-800">Bezpieczeństwo</span></div><ul className="text-sm text-green-700 space-y-1"><li>• Hasła hashowane SHA-256</li><li>• Dane zapisywane lokalnie</li><li>• Automatyczna synchronizacja</li></ul></div><p className="text-slate-500 text-sm text-center">© 2025 REX Cloud by M. Szewczyk</p></div></div></div>);
 
 // ============================================
 // MAIN APP
@@ -285,33 +249,51 @@ function REXCloudApp() {
   const [shifts, setShifts] = useState([]);
   const [vacation, setVacation] = useState(null);
   const [calendarSha, setCalendarSha] = useState(null);
+  const [initialSyncDone, setInitialSyncDone] = useState(false);
   
-  // Po zalogowaniu pobierz grafik użytkownika
-  useEffect(() => { if (currentUser) { setUser(currentUser.profile); syncFromGitHub(currentUser.calendarId); } }, [currentUser]);
+  // Po zalogowaniu pobierz grafik
+  useEffect(() => {
+    if (currentUser) {
+      setUser(currentUser.profile);
+      syncFromGitHub();
+    }
+  }, [currentUser]);
   
-  // Auto-save przy zmianach
-  useEffect(() => { if (currentUser && calendarSha && shifts.length > 0) { const timer = setTimeout(() => saveToGitHub(currentUser.calendarId), 1000); return () => clearTimeout(timer); } }, [shifts]);
+  // Auto-save przy zmianach (tylko po pierwszej synchronizacji)
+  useEffect(() => {
+    if (currentUser && initialSyncDone && shifts.length > 0) {
+      const timer = setTimeout(() => saveToGitHub(), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [shifts, initialSyncDone]);
   
-  const syncFromGitHub = async (calendarId) => {
+  const syncFromGitHub = async () => {
     try {
-      // API pobiera kalendarz przypisany do użytkownika
-      const res = await fetch(`${API_BASE_URL}/calendar?file=${calendarId}.ics`);
+      const res = await fetch(API_URL);
       const data = await res.json();
-      if (data.success && data.content) { setShifts(parseICS(data.content)); setCalendarSha(data.sha); }
-    } catch (e) { console.error('Sync error:', e); }
+      if (data.success && data.content) {
+        const parsed = parseICS(data.content);
+        setShifts(parsed);
+        setCalendarSha(data.sha);
+      }
+      setInitialSyncDone(true);
+    } catch (e) {
+      console.error('Sync error:', e);
+      setInitialSyncDone(true);
+    }
   };
   
-  const saveToGitHub = async (calendarId) => {
+  const saveToGitHub = async () => {
+    if (!calendarSha) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/calendar`, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ 
-          content: generateICS(shifts), 
-          sha: calendarSha, 
-          message: `Auto-sync: ${currentUser.profile.name}`,
-          file: `${calendarId}.ics`
-        }) 
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: generateICS(shifts),
+          sha: calendarSha,
+          message: 'Auto-sync from REX Cloud'
+        })
       });
       const data = await res.json();
       if (data.success) setCalendarSha(data.sha);
@@ -319,7 +301,7 @@ function REXCloudApp() {
   };
   
   const handleLogin = (userData) => { setCurrentUser(userData); };
-  const handleLogout = () => { setCurrentUser(null); setUser(null); setPage('home'); setShifts([]); setVacation(null); setCalendarSha(null); };
+  const handleLogout = () => { setCurrentUser(null); setUser(null); setPage('home'); setShifts([]); setVacation(null); setCalendarSha(null); setInitialSyncDone(false); };
   const addShift = (s) => { setShifts(prev => [...prev.filter(x => x.date !== s.date), s].sort((a,b) => new Date(a.date) - new Date(b.date))); };
   const addVacation = (v) => setVacation(v);
   const updateUser = (u) => setUser(u);
@@ -338,7 +320,7 @@ function REXCloudApp() {
       {page === 'preferences' && <PreferencesPage date={date} onDateChange={setDate} onAddShift={addShift} />}
       {page === 'holidays' && <HolidaysPage vacation={vacation} onAddVacation={addVacation} />}
       {page === 'workedTime' && <StatisticsPage shifts={shifts} hourlyRate={user.hourlyRate || 0} />}
-      {page === 'userData' && <UserDataPage user={user} onUpdate={updateUser} />}
+      {page === 'userData' && <UserDataPage user={user} onUpdate={updateUser} userId={currentUser.id} />}
       {page === 'about' && <AboutPage />}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 flex justify-around z-10">
         {[['home', Home, 'Home'], ['shifts', Calendar, 'Zmiany'], ['preferences', Plus, 'Wnioski'], ['holidays', Umbrella, 'Urlopy']].map(([id, Icon, label]) => (
