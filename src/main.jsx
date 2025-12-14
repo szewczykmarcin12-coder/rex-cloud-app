@@ -37,7 +37,7 @@ const hashPassword = async (password) => {
 const USERS = [
   {
     id: 'user_ms_001',
-    pinHash: '8eebb0799014a38852ffad12b8ba8c3fad326e1b92f83a01549c4e69b0bb9893', // hash PIN "4917"
+    pinHash: '8eebb0799014a38852ffad12b8ba8c3fad326e1b92f83a01549c4e69b0bb9893', // hash PIN
     profile: {
       name: 'MARCIN SZEWCZYK',
       initials: 'MS',
@@ -125,11 +125,11 @@ const LoginScreen = ({ onLogin }) => {
           <div className="flex items-center justify-center gap-2 mb-6"><Lock size={20} className="text-cyan-500" /><h2 className="text-2xl font-semibold">Zaloguj się</h2></div>
           {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
           <div className="space-y-4">
-            <div><label className="block text-sm text-slate-600 mb-1">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-xl border focus:border-cyan-500 outline-none" placeholder="twoj@email.com" disabled={loading} /></div>
+            <div><label className="block text-sm text-slate-600 mb-1">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-xl border focus:border-cyan-500 outline-none" placeholder="Email" disabled={loading} /></div>
             <div><label className="block text-sm text-slate-600 mb-1">PIN</label><input type="password" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full px-4 py-3 rounded-xl border focus:border-cyan-500 outline-none" placeholder="••••" maxLength={4} disabled={loading} /></div>
             <button onClick={handleLogin} disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-300 text-white font-semibold py-3 rounded-xl transition-colors">{loading ? 'Logowanie...' : 'Zaloguj się'}</button>
           </div>
-          <p className="text-xs text-slate-400 text-center mt-4">🔒 Połączenie szyfrowane</p>
+          <p className="text-xs text-slate-400 text-center mt-4">Połączenie szyfrowane</p>
         </div>
       </div>
     </div>
