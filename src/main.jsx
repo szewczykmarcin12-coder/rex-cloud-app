@@ -169,14 +169,23 @@ const Header = ({ title, onMenuClick }) => (<div className="bg-gradient-to-r fro
 // ============================================
 // SWIPEABLE SHIFT CARD
 // ============================================
-const SwipeableShiftCard = ({ shift, onShowCoworkers }) => {
+const SwipeableShiftCard = ({ shift, onShowCoworkers, isRevealed, onReveal, isSelected, onSelect }) => {
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
   const currentX = useRef(0);
+  const hasMoved = useRef(false);
+  
+  // Synchronize with external isRevealed state
+  useEffect(() => {
+    if (!isRevealed && translateX > 0) {
+      setTranslateX(0);
+    }
+  }, [isRevealed]);
   
   const handleTouchStart = (e) => {
     startX.current = e.touches[0].clientX;
+    hasMoved.current = false;
     setIsDragging(true);
   };
   
@@ -184,7 +193,7 @@ const SwipeableShiftCard = ({ shift, onShowCoworkers }) => {
     if (!isDragging) return;
     currentX.current = e.touches[0].clientX;
     const diff = startX.current - currentX.current;
-    // Only allow swipe left (positive diff), max 80px
+    if (Math.abs(diff) > 5) hasMoved.current = true;
     if (diff > 0) {
       setTranslateX(Math.min(diff, 80));
     } else {
@@ -194,16 +203,20 @@ const SwipeableShiftCard = ({ shift, onShowCoworkers }) => {
   
   const handleTouchEnd = () => {
     setIsDragging(false);
-    // Snap to open or closed
     if (translateX > 40) {
       setTranslateX(70);
+      onReveal(shift.id);
     } else {
       setTranslateX(0);
+      if (!hasMoved.current) {
+        onSelect(shift.id);
+      }
     }
   };
   
   const handleMouseDown = (e) => {
     startX.current = e.clientX;
+    hasMoved.current = false;
     setIsDragging(true);
   };
   
@@ -211,6 +224,7 @@ const SwipeableShiftCard = ({ shift, onShowCoworkers }) => {
     if (!isDragging) return;
     currentX.current = e.clientX;
     const diff = startX.current - currentX.current;
+    if (Math.abs(diff) > 5) hasMoved.current = true;
     if (diff > 0) {
       setTranslateX(Math.min(diff, 80));
     } else {
@@ -222,8 +236,12 @@ const SwipeableShiftCard = ({ shift, onShowCoworkers }) => {
     setIsDragging(false);
     if (translateX > 40) {
       setTranslateX(70);
+      onReveal(shift.id);
     } else {
       setTranslateX(0);
+      if (!hasMoved.current) {
+        onSelect(shift.id);
+      }
     }
   };
   
@@ -232,13 +250,15 @@ const SwipeableShiftCard = ({ shift, onShowCoworkers }) => {
       setIsDragging(false);
       if (translateX > 40) {
         setTranslateX(70);
+        onReveal(shift.id);
       } else {
         setTranslateX(0);
       }
     }
   };
   
-  const isRevealed = translateX > 40;
+  const isOpen = translateX > 40 || isRevealed;
+  const isHighlighted = isOpen || isSelected;
   
   return (
     <div className="relative overflow-hidden rounded-xl shadow-sm mb-3">
@@ -254,8 +274,8 @@ const SwipeableShiftCard = ({ shift, onShowCoworkers }) => {
       
       {/* Main card */}
       <div 
-        className={`relative bg-white border-l-4 border-cyan-400 p-4 transition-all duration-200 ${isRevealed ? 'bg-cyan-50' : ''}`}
-        style={{ transform: `translateX(-${translateX}px)` }}
+        className={`relative border-l-4 border-cyan-400 p-4 transition-all duration-200 ${isHighlighted ? 'bg-cyan-50' : 'bg-white'}`}
+        style={{ transform: `translateX(-${isRevealed ? 70 : translateX}px)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -265,7 +285,7 @@ const SwipeableShiftCard = ({ shift, onShowCoworkers }) => {
         onMouseLeave={handleMouseLeave}
       >
         <div className="flex gap-4">
-          <div className={`rounded-xl px-3 py-2 text-center min-w-14 ${isRevealed ? 'bg-cyan-100' : 'bg-cyan-50'}`}>
+          <div className={`rounded-xl px-3 py-2 text-center min-w-14 ${isHighlighted ? 'bg-cyan-100' : 'bg-cyan-50'}`}>
             <p className="text-xs text-cyan-600">{shift.dayName}</p>
             <p className="text-xl font-bold">{shift.dayNum}.{String(new Date(shift.date).getMonth()+1).padStart(2,'0')}</p>
           </div>
@@ -387,11 +407,25 @@ const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHoliday
 const ShiftsPage = ({ date, onDateChange, shifts }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedShift, setSelectedShift] = useState(null);
+  const [revealedShiftId, setRevealedShiftId] = useState(null);
+  const [clickedShiftId, setClickedShiftId] = useState(null);
   
   const filtered = shifts.filter(s => { 
     const d = new Date(s.date); 
     return (!selectedDay || d.getDate() === selectedDay) && d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear(); 
   }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  const handleReveal = (shiftId) => {
+    // Only one shift can be revealed at a time
+    setRevealedShiftId(shiftId);
+    setClickedShiftId(null); // Clear click selection when swiping
+  };
+  
+  const handleSelect = (shiftId) => {
+    // Toggle selection on click
+    setClickedShiftId(prev => prev === shiftId ? null : shiftId);
+    setRevealedShiftId(null); // Close any revealed shift when clicking
+  };
   
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 pb-20">
@@ -407,7 +441,11 @@ const ShiftsPage = ({ date, onDateChange, shifts }) => {
             <SwipeableShiftCard 
               key={shift.id} 
               shift={shift} 
-              onShowCoworkers={setSelectedShift} 
+              onShowCoworkers={setSelectedShift}
+              isRevealed={revealedShiftId === shift.id}
+              onReveal={handleReveal}
+              isSelected={clickedShiftId === shift.id}
+              onSelect={handleSelect}
             />
           ))
         )}
@@ -421,7 +459,7 @@ const ShiftsPage = ({ date, onDateChange, shifts }) => {
       )}
     </div>
   );
-};
+}; 
 
 const PreferencesPage = ({ date, onDateChange, onAddShift }) => {
   const [prefs, setPrefs] = useState([]);
