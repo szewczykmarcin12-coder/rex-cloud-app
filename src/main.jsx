@@ -1,13 +1,60 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, User, Plus, Cloud, TrendingUp, DollarSign, BarChart3 } from 'lucide-react';
+import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, User, Plus, Cloud, TrendingUp, DollarSign, BarChart3, Lock } from 'lucide-react';
 
-const API_URL = 'https://rex-cloud-backend.vercel.app/api/calendar';
+// ============================================
+// KONFIGURACJA API
+// ============================================
+const API_BASE_URL = 'https://rex-cloud-backend.vercel.app/api';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 const positionColors = { 'KIT': '#7CB342', 'CAS': '#00A3E0', 'SUP': '#E74C3C', 'RUN': '#9C27B0' };
 const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
 const dayNames = ['PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB', 'NIEDZ'];
 
+// ============================================
+// SYSTEM UŻYTKOWNIKÓW Z HASHOWANIEM
+// ============================================
+const hashPassword = async (password) => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+// Baza użytkowników - PIN jest przechowywany jako hash SHA-256
+const USERS = [
+  {
+    id: 'user_ms_001',
+    pinHash: '8eebb0799014a38852ffad12b8ba8c3fad326e1b92f83a01549c4e69b0bb9893', // hash PIN "4917"
+    calendarId: 'kalendarz_ms', // unikalny plik kalendarza dla tego użytkownika
+    profile: {
+      name: 'MARCIN SZEWCZYK',
+      initials: 'MS',
+      email: 'szewczyk.marcin12@gmail.com',
+      company: 'Rex Concepts',
+      phone: '',
+      address: 'Kraków',
+      hourlyRate: 0
+    }
+  }
+];
+
+const authenticateUser = async (email, pin) => {
+  const emailLower = email.toLowerCase().trim();
+  const pinHash = await hashPassword(pin.trim());
+  
+  for (const user of USERS) {
+    if (user.profile.email.toLowerCase() === emailLower && user.pinHash === pinHash) {
+      return { id: user.id, calendarId: user.calendarId, profile: { ...user.profile } };
+    }
+  }
+  return null;
+};
+
+// ============================================
+// ICS PARSER & GENERATOR
+// ============================================
 const parseICS = (icsContent) => {
   const shifts = [];
   const dayNamesFull = ['NIEDZ', 'PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB'];
@@ -35,12 +82,106 @@ const generateICS = (shifts) => {
   return 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//REX Cloud//PL\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\nX-WR-CALNAME:REX Cloud\n'+events+'\nEND:VCALENDAR';
 };
 
+// ============================================
+// LOGIN SCREEN
+// ============================================
 const LoginScreen = ({ onLogin }) => {
-  const [email, setEmail] = useState(''); const [pin, setPin] = useState(''); const [error, setError] = useState('');
-  const handleLogin = () => { if (email === 'szewczyk.marcin12@gmail.com' && pin === '4917') onLogin(); else setError(email && pin ? 'Nieprawidłowe dane' : 'Wprowadź dane'); };
-  return (<div className="min-h-screen bg-gradient-to-b from-slate-800 to-slate-900 flex items-center justify-center p-6"><div className="w-full max-w-sm"><div className="flex items-center justify-center gap-3 mb-12"><div className="w-14 h-14 bg-cyan-500 rounded-xl flex items-center justify-center"><Cloud size={32} className="text-white" /></div><div><span className="text-white text-3xl font-light">REX</span><span className="text-cyan-300 text-3xl font-light ml-2">Cloud</span></div></div><div className="bg-white rounded-2xl p-8"><h2 className="text-2xl font-semibold text-center mb-6">Zaloguj się</h2>{error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}<div className="space-y-4"><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-xl border" placeholder="Email" /><input type="password" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full px-4 py-3 rounded-xl border" placeholder="PIN" maxLength={4} /><button onClick={handleLogin} className="w-full bg-cyan-500 text-white font-semibold py-3 rounded-xl">Zaloguj się</button></div></div></div></div>);
+  const [email, setEmail] = useState('');
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email || !pin) {
+      setError('Wprowadź email i PIN');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      const user = await authenticateUser(email, pin);
+      if (user) {
+        onLogin(user);
+      } else {
+        setError('Nieprawidłowy email lub PIN');
+      }
+    } catch (e) {
+      setError('Błąd logowania');
+    }
+    
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-800 to-slate-900 flex items-center justify-center p-6">
+      <div className="w-full max-w-sm">
+        <div className="flex items-center justify-center gap-3 mb-12">
+          <div className="w-14 h-14 bg-cyan-500 rounded-xl flex items-center justify-center">
+            <Cloud size={32} className="text-white" />
+          </div>
+          <div>
+            <span className="text-white text-3xl font-light">REX</span>
+            <span className="text-cyan-300 text-3xl font-light ml-2">Cloud</span>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-2xl p-8">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <Lock size={20} className="text-cyan-500" />
+            <h2 className="text-2xl font-semibold">Zaloguj się</h2>
+          </div>
+          
+          {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-slate-600 mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border focus:border-cyan-500 outline-none"
+                placeholder="twoj@email.com"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-600 mb-1">PIN</label>
+              <input
+                type="password"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                className="w-full px-4 py-3 rounded-xl border focus:border-cyan-500 outline-none"
+                placeholder="••••"
+                maxLength={4}
+                disabled={loading}
+              />
+            </div>
+            <button 
+              onClick={handleLogin} 
+              disabled={loading}
+              className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-300 text-white font-semibold py-3 rounded-xl transition-colors"
+            >
+              {loading ? 'Logowanie...' : 'Zaloguj się'}
+            </button>
+          </div>
+          
+          <p className="text-xs text-slate-400 text-center mt-4">
+            🔒 Połączenie szyfrowane
+          </p>
+        </div>
+        <p className="text-slate-400 text-center text-sm mt-8">© 2025 REX Cloud by M. Szewczyk</p>
+      </div>
+    </div>
+  );
 };
 
+// ============================================
+// UI COMPONENTS
+// ============================================
 const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) => {
   const year = date.getFullYear(), month = date.getMonth();
   const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0), startDay = (firstDay.getDay() + 6) % 7;
@@ -57,6 +198,9 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) =
 
 const Header = ({ title, onMenuClick }) => (<div className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-4 py-4 flex items-center justify-between sticky top-0 z-30"><div className="flex items-center gap-3"><Cloud size={24} /><span className="text-lg font-medium">{title}</span></div><button onClick={onMenuClick} className="p-2"><Menu size={24} /></button></div>);
 
+// ============================================
+// PAGES
+// ============================================
 const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHolidays }) => {
   const calcCountdown = (dateStr, time) => { if (!dateStr) return { days: 0, hours: 0, min: 0 }; const target = new Date(dateStr); if (time) { const [h, m] = time.split(':'); target.setHours(+h, +m); } const diff = target - new Date(); if (diff <= 0) return { days: 0, hours: 0, min: 0 }; return { days: Math.floor(diff / 86400000), hours: Math.floor((diff % 86400000) / 3600000), min: Math.floor((diff % 3600000) / 60000) }; };
   const shiftCountdown = nextShift ? calcCountdown(nextShift.date, nextShift.shifts[0].time.split(' - ')[0]) : null;
@@ -102,180 +246,19 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
 };
 
 // ============================================
-// STATISTICS PAGE (Przepracowany Czas)
+// STATISTICS PAGE
 // ============================================
-const calculateHours = (timeStr) => {
-  try {
-    const [start, end] = timeStr.split(' - ');
-    const [sh, sm] = start.split(':').map(Number);
-    const [eh, em] = end.split(':').map(Number);
-    let hours = eh - sh + (em - sm) / 60;
-    if (hours < 0) hours += 24;
-    return hours;
-  } catch (e) { return 0; }
-};
+const calculateHours = (timeStr) => { try { const [start, end] = timeStr.split(' - '); const [sh, sm] = start.split(':').map(Number); const [eh, em] = end.split(':').map(Number); let hours = eh - sh + (em - sm) / 60; if (hours < 0) hours += 24; return hours; } catch (e) { return 0; } };
 
-const BarChart = ({ data, maxValue, color = '#00A3E0' }) => (
-  <div className="flex items-end justify-between gap-2 h-32">
-    {data.map((item, i) => {
-      const height = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
-      return (
-        <div key={i} className="flex flex-col items-center flex-1">
-          <span className="text-xs font-semibold mb-1">{item.value.toFixed(0)}h</span>
-          <div className="w-full rounded-t-lg transition-all duration-500" style={{ height: `${Math.max(height, 5)}%`, backgroundColor: color, opacity: i === data.length - 1 ? 1 : 0.6 }} />
-          <span className="text-xs text-slate-500 mt-2">{item.label}</span>
-        </div>
-      );
-    })}
-  </div>
-);
+const BarChart = ({ data, maxValue, color = '#00A3E0' }) => (<div className="flex items-end justify-between gap-2 h-32">{data.map((item, i) => { const height = maxValue > 0 ? (item.value / maxValue) * 100 : 0; return (<div key={i} className="flex flex-col items-center flex-1"><span className="text-xs font-semibold mb-1">{item.value.toFixed(0)}h</span><div className="w-full rounded-t-lg transition-all duration-500" style={{ height: `${Math.max(height, 5)}%`, backgroundColor: color, opacity: i === data.length - 1 ? 1 : 0.6 }} /><span className="text-xs text-slate-500 mt-2">{item.label}</span></div>); })}</div>);
 
-const PositionBreakdown = ({ positions }) => {
-  const colors = { 'KIT': '#7CB342', 'CAS': '#00A3E0', 'SUP': '#E74C3C', 'RUN': '#9C27B0' };
-  const total = Object.values(positions).reduce((a, b) => a + b, 0);
-  if (total === 0) return null;
-  return (
-    <div className="space-y-2">
-      {Object.entries(positions).filter(([_, hours]) => hours > 0).map(([pos, hours]) => {
-        const percent = (hours / total) * 100;
-        return (
-          <div key={pos} className="flex items-center gap-3">
-            <span className="text-sm font-medium w-10">{pos}</span>
-            <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${percent}%`, backgroundColor: colors[pos] }} />
-            </div>
-            <span className="text-sm text-slate-600 w-16 text-right">{hours.toFixed(1)}h</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
+const PositionBreakdown = ({ positions }) => { const colors = { 'KIT': '#7CB342', 'CAS': '#00A3E0', 'SUP': '#E74C3C', 'RUN': '#9C27B0' }; const total = Object.values(positions).reduce((a, b) => a + b, 0); if (total === 0) return null; return (<div className="space-y-2">{Object.entries(positions).filter(([_, hours]) => hours > 0).map(([pos, hours]) => { const percent = (hours / total) * 100; return (<div key={pos} className="flex items-center gap-3"><span className="text-sm font-medium w-10">{pos}</span><div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${percent}%`, backgroundColor: colors[pos] }} /></div><span className="text-sm text-slate-600 w-16 text-right">{hours.toFixed(1)}h</span></div>); })}</div>); };
 
 const StatisticsPage = ({ shifts, hourlyRate = 0 }) => {
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-  
-  const monthsData = useMemo(() => {
-    const months = [];
-    for (let i = 2; i >= 0; i--) {
-      let month = currentMonth - i;
-      let year = currentYear;
-      if (month < 0) { month += 12; year -= 1; }
-      
-      const monthShifts = shifts.filter(s => {
-        const d = new Date(s.date);
-        return d.getMonth() === month && d.getFullYear() === year;
-      });
-      
-      let totalHours = 0, shiftsCount = 0;
-      const positions = { KIT: 0, CAS: 0, SUP: 0, RUN: 0 };
-      
-      monthShifts.forEach(shift => {
-        shift.shifts.forEach(s => {
-          const hours = calculateHours(s.time);
-          totalHours += hours;
-          shiftsCount++;
-          if (positions.hasOwnProperty(s.type)) positions[s.type] += hours;
-        });
-      });
-      
-      months.push({ month, year, label: monthNames[month].substring(0, 3), fullLabel: monthNames[month], totalHours, shiftsCount, positions, earnings: totalHours * hourlyRate });
-    }
-    return months;
-  }, [shifts, currentMonth, currentYear, hourlyRate]);
-  
-  const currentMonthData = monthsData[2];
-  const totalHours3Months = monthsData.reduce((sum, m) => sum + m.totalHours, 0);
-  const totalEarnings3Months = totalHours3Months * hourlyRate;
-  const avgHoursPerMonth = totalHours3Months / 3;
-  const chartData = monthsData.map(m => ({ label: m.label, value: m.totalHours }));
-  const maxChartValue = Math.max(...chartData.map(d => d.value), 1);
-  
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 pb-24 space-y-4">
-      <div className="bg-white rounded-2xl shadow-sm p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{currentMonthData.fullLabel} {currentMonthData.year}</h3>
-          <Clock size={24} className="text-cyan-500" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-cyan-50 rounded-xl p-4 text-center">
-            <p className="text-3xl font-bold text-cyan-600">{currentMonthData.totalHours.toFixed(1)}</p>
-            <p className="text-sm text-cyan-700">godzin</p>
-          </div>
-          <div className="bg-emerald-50 rounded-xl p-4 text-center">
-            <p className="text-3xl font-bold text-emerald-600">{currentMonthData.shiftsCount}</p>
-            <p className="text-sm text-emerald-700">zmian</p>
-          </div>
-        </div>
-        {hourlyRate > 0 && (
-          <div className="mt-4 bg-amber-50 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <DollarSign size={20} className="text-amber-600" />
-                <span className="text-sm text-amber-700">Prognozowane wynagrodzenie</span>
-              </div>
-              <span className="text-xl font-bold text-amber-600">{currentMonthData.earnings.toFixed(2)} zł</span>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <div className="bg-white rounded-2xl shadow-sm p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Godziny - ostatnie 3 miesiące</h3>
-          <BarChart3 size={24} className="text-cyan-500" />
-        </div>
-        <BarChart data={chartData} maxValue={maxChartValue} />
-        <div className="mt-4 pt-4 border-t flex justify-between text-sm">
-          <div><span className="text-slate-500">Łącznie:</span><span className="font-semibold ml-2">{totalHours3Months.toFixed(1)}h</span></div>
-          <div><span className="text-slate-500">Średnia/mies.:</span><span className="font-semibold ml-2">{avgHoursPerMonth.toFixed(1)}h</span></div>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-2xl shadow-sm p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Podział wg stanowisk</h3>
-          <TrendingUp size={24} className="text-cyan-500" />
-        </div>
-        <p className="text-sm text-slate-500 mb-3">{currentMonthData.fullLabel}</p>
-        {currentMonthData.totalHours > 0 ? <PositionBreakdown positions={currentMonthData.positions} /> : <p className="text-slate-400 text-center py-4">Brak danych</p>}
-      </div>
-      
-      {hourlyRate > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Podsumowanie zarobków</h3>
-            <DollarSign size={24} className="text-emerald-500" />
-          </div>
-          <div className="space-y-3">
-            {monthsData.map((m, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
-                <div>
-                  <p className="font-medium">{m.fullLabel}</p>
-                  <p className="text-sm text-slate-500">{m.totalHours.toFixed(1)}h × {hourlyRate.toFixed(2)} zł</p>
-                </div>
-                <span className="text-lg font-semibold text-emerald-600">{m.earnings.toFixed(2)} zł</span>
-              </div>
-            ))}
-            <div className="flex items-center justify-between pt-2 mt-2 border-t-2">
-              <span className="font-semibold">Razem (3 mies.)</span>
-              <span className="text-xl font-bold text-emerald-600">{totalEarnings3Months.toFixed(2)} zł</span>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {hourlyRate === 0 && (
-        <div className="bg-amber-50 rounded-2xl p-4 text-center">
-          <DollarSign size={32} className="text-amber-400 mx-auto mb-2" />
-          <p className="text-amber-700 text-sm">Dodaj stawkę godzinową w zakładce "Dane użytkownika", aby zobaczyć prognozowane zarobki</p>
-        </div>
-      )}
-    </div>
-  );
+  const now = new Date(); const currentMonth = now.getMonth(); const currentYear = now.getFullYear();
+  const monthsData = useMemo(() => { const months = []; for (let i = 2; i >= 0; i--) { let month = currentMonth - i; let year = currentYear; if (month < 0) { month += 12; year -= 1; } const monthShifts = shifts.filter(s => { const d = new Date(s.date); return d.getMonth() === month && d.getFullYear() === year; }); let totalHours = 0, shiftsCount = 0; const positions = { KIT: 0, CAS: 0, SUP: 0, RUN: 0 }; monthShifts.forEach(shift => { shift.shifts.forEach(s => { const hours = calculateHours(s.time); totalHours += hours; shiftsCount++; if (positions.hasOwnProperty(s.type)) positions[s.type] += hours; }); }); months.push({ month, year, label: monthNames[month].substring(0, 3), fullLabel: monthNames[month], totalHours, shiftsCount, positions, earnings: totalHours * hourlyRate }); } return months; }, [shifts, currentMonth, currentYear, hourlyRate]);
+  const currentMonthData = monthsData[2]; const totalHours3Months = monthsData.reduce((sum, m) => sum + m.totalHours, 0); const totalEarnings3Months = totalHours3Months * hourlyRate; const avgHoursPerMonth = totalHours3Months / 3; const chartData = monthsData.map(m => ({ label: m.label, value: m.totalHours })); const maxChartValue = Math.max(...chartData.map(d => d.value), 1);
+  return (<div className="min-h-screen bg-slate-50 p-4 pb-24 space-y-4"><div className="bg-white rounded-2xl shadow-sm p-4"><div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">{currentMonthData.fullLabel} {currentMonthData.year}</h3><Clock size={24} className="text-cyan-500" /></div><div className="grid grid-cols-2 gap-4"><div className="bg-cyan-50 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-cyan-600">{currentMonthData.totalHours.toFixed(1)}</p><p className="text-sm text-cyan-700">godzin</p></div><div className="bg-emerald-50 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-emerald-600">{currentMonthData.shiftsCount}</p><p className="text-sm text-emerald-700">zmian</p></div></div>{hourlyRate > 0 && (<div className="mt-4 bg-amber-50 rounded-xl p-4"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><DollarSign size={20} className="text-amber-600" /><span className="text-sm text-amber-700">Prognozowane wynagrodzenie</span></div><span className="text-xl font-bold text-amber-600">{currentMonthData.earnings.toFixed(2)} zł</span></div></div>)}</div><div className="bg-white rounded-2xl shadow-sm p-4"><div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Godziny - ostatnie 3 miesiące</h3><BarChart3 size={24} className="text-cyan-500" /></div><BarChart data={chartData} maxValue={maxChartValue} /><div className="mt-4 pt-4 border-t flex justify-between text-sm"><div><span className="text-slate-500">Łącznie:</span><span className="font-semibold ml-2">{totalHours3Months.toFixed(1)}h</span></div><div><span className="text-slate-500">Średnia/mies.:</span><span className="font-semibold ml-2">{avgHoursPerMonth.toFixed(1)}h</span></div></div></div><div className="bg-white rounded-2xl shadow-sm p-4"><div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Podział wg stanowisk</h3><TrendingUp size={24} className="text-cyan-500" /></div><p className="text-sm text-slate-500 mb-3">{currentMonthData.fullLabel}</p>{currentMonthData.totalHours > 0 ? <PositionBreakdown positions={currentMonthData.positions} /> : <p className="text-slate-400 text-center py-4">Brak danych</p>}</div>{hourlyRate > 0 && (<div className="bg-white rounded-2xl shadow-sm p-4"><div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Podsumowanie zarobków</h3><DollarSign size={24} className="text-emerald-500" /></div><div className="space-y-3">{monthsData.map((m, i) => (<div key={i} className="flex items-center justify-between py-2 border-b last:border-0"><div><p className="font-medium">{m.fullLabel}</p><p className="text-sm text-slate-500">{m.totalHours.toFixed(1)}h × {hourlyRate.toFixed(2)} zł</p></div><span className="text-lg font-semibold text-emerald-600">{m.earnings.toFixed(2)} zł</span></div>))}<div className="flex items-center justify-between pt-2 mt-2 border-t-2"><span className="font-semibold">Razem (3 mies.)</span><span className="text-xl font-bold text-emerald-600">{totalEarnings3Months.toFixed(2)} zł</span></div></div></div>)}{hourlyRate === 0 && (<div className="bg-amber-50 rounded-2xl p-4 text-center"><DollarSign size={32} className="text-amber-400 mx-auto mb-2" /><p className="text-amber-700 text-sm">Dodaj stawkę godzinową w zakładce "Dane użytkownika"</p></div>)}</div>);
 };
 
 // ============================================
@@ -284,99 +267,67 @@ const StatisticsPage = ({ shifts, hourlyRate = 0 }) => {
 const UserDataPage = ({ user, onUpdate }) => {
   const [form, setForm] = useState(user);
   const [saved, setSaved] = useState(false);
-  
-  const save = () => {
-    const updatedUser = {
-      ...form,
-      hourlyRate: parseFloat(form.hourlyRate) || 0,
-      initials: form.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-    };
-    onUpdate(updatedUser);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-  
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 pb-24">
-      <div className="bg-white rounded-2xl overflow-hidden">
-        <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-6 text-center">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
-            <span className="text-cyan-600 font-bold text-2xl">{user.initials}</span>
-          </div>
-          <h2 className="text-white text-xl font-semibold">{form.name}</h2>
-        </div>
-        <div className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Imię i nazwisko</label>
-            <input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="Imię i nazwisko" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Email</label>
-            <input value={form.email} disabled className="w-full p-3 bg-slate-100 rounded-xl text-slate-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Telefon</label>
-            <input type="tel" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="+48 123 456 789" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Adres</label>
-            <input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="Adres zamieszkania" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Stawka godzinowa (zł)</label>
-            <input type="number" step="0.01" min="0" value={form.hourlyRate || ''} onChange={(e) => setForm({...form, hourlyRate: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="np. 27.70" />
-            <p className="text-xs text-slate-400 mt-1">Używana do obliczania prognozowanych zarobków</p>
-          </div>
-          <button onClick={save} className={`w-full py-3 rounded-xl font-semibold ${saved ? 'bg-green-500 text-white' : 'bg-cyan-500 text-white'}`}>
-            {saved ? '✓ Zapisano' : 'Zapisz zmiany'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const save = () => { const updatedUser = { ...form, hourlyRate: parseFloat(form.hourlyRate) || 0, initials: form.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() }; onUpdate(updatedUser); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  return (<div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-6 text-center"><div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3"><span className="text-cyan-600 font-bold text-2xl">{user.initials}</span></div><h2 className="text-white text-xl font-semibold">{form.name}</h2><p className="text-cyan-100 text-sm mt-1">🔒 Konto zabezpieczone</p></div><div className="p-4 space-y-4"><div><label className="block text-sm font-medium text-slate-600 mb-1">Imię i nazwisko</label><input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="Imię i nazwisko" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Email</label><input value={form.email} disabled className="w-full p-3 bg-slate-100 rounded-xl text-slate-500" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Telefon</label><input type="tel" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="+48 123 456 789" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Adres</label><input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="Adres zamieszkania" /></div><div><label className="block text-sm font-medium text-slate-600 mb-1">Stawka godzinowa (zł)</label><input type="number" step="0.01" min="0" value={form.hourlyRate || ''} onChange={(e) => setForm({...form, hourlyRate: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl" placeholder="np. 27.70" /><p className="text-xs text-slate-400 mt-1">Używana do obliczania prognozowanych zarobków</p></div><button onClick={save} className={`w-full py-3 rounded-xl font-semibold ${saved ? 'bg-green-500 text-white' : 'bg-cyan-500 text-white'}`}>{saved ? '✓ Zapisano' : 'Zapisz zmiany'}</button></div></div></div>);
 };
 
-const AboutPage = () => (<div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-8 text-center"><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-light">REX <span className="text-cyan-200">Cloud</span></span><p className="text-cyan-100 mt-2">v2.2.0 - Statistics</p></div><div className="p-6 text-center"><p className="text-slate-600 mb-4">Aplikacja do zarządzania grafikiem pracy z automatyczną synchronizacją GitHub.</p><p className="text-slate-500 text-sm">© 2025 REX Cloud by M. Szewczyk</p></div></div></div>);
+const AboutPage = () => (<div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-8 text-center"><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-light">REX <span className="text-cyan-200">Cloud</span></span><p className="text-cyan-100 mt-2">v3.0.0 - Secure</p></div><div className="p-6 space-y-4"><div className="bg-green-50 rounded-xl p-4"><div className="flex items-center gap-2 mb-2"><Lock size={18} className="text-green-600" /><span className="font-semibold text-green-800">Bezpieczeństwo</span></div><ul className="text-sm text-green-700 space-y-1"><li>• Hasła hashowane SHA-256</li><li>• Grafik przypisany do konta</li><li>• Automatyczna synchronizacja</li></ul></div><p className="text-slate-500 text-sm text-center">© 2025 REX Cloud by M. Szewczyk</p></div></div></div>);
 
 // ============================================
 // MAIN APP
 // ============================================
 function REXCloudApp() {
-  const [logged, setLogged] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [sidebar, setSidebar] = useState(false);
   const [page, setPage] = useState('home');
   const [date, setDate] = useState(new Date(2025, 11, 1));
-  const [user, setUser] = useState({ name: 'MARCIN SZEWCZYK', initials: 'MS', email: 'szewczyk.marcin12@gmail.com', company: 'Rex Concepts', phone: '', address: 'Kraków', hourlyRate: 0 });
+  const [user, setUser] = useState(null);
   const [shifts, setShifts] = useState([]);
   const [vacation, setVacation] = useState(null);
   const [calendarSha, setCalendarSha] = useState(null);
   
-  useEffect(() => { if (logged) syncFromGitHub(); }, [logged]);
-  useEffect(() => { if (logged && calendarSha && shifts.length > 0) { const timer = setTimeout(() => saveToGitHub(), 1000); return () => clearTimeout(timer); } }, [shifts]);
+  // Po zalogowaniu pobierz grafik użytkownika
+  useEffect(() => { if (currentUser) { setUser(currentUser.profile); syncFromGitHub(currentUser.calendarId); } }, [currentUser]);
   
-  const syncFromGitHub = async () => {
+  // Auto-save przy zmianach
+  useEffect(() => { if (currentUser && calendarSha && shifts.length > 0) { const timer = setTimeout(() => saveToGitHub(currentUser.calendarId), 1000); return () => clearTimeout(timer); } }, [shifts]);
+  
+  const syncFromGitHub = async (calendarId) => {
     try {
-      const res = await fetch(API_URL);
+      // API pobiera kalendarz przypisany do użytkownika
+      const res = await fetch(`${API_BASE_URL}/calendar?file=${calendarId}.ics`);
       const data = await res.json();
       if (data.success && data.content) { setShifts(parseICS(data.content)); setCalendarSha(data.sha); }
     } catch (e) { console.error('Sync error:', e); }
   };
   
-  const saveToGitHub = async () => {
+  const saveToGitHub = async (calendarId) => {
     try {
-      const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: generateICS(shifts), sha: calendarSha, message: 'Auto-sync from REX Cloud' }) });
+      const res = await fetch(`${API_BASE_URL}/calendar`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          content: generateICS(shifts), 
+          sha: calendarSha, 
+          message: `Auto-sync: ${currentUser.profile.name}`,
+          file: `${calendarId}.ics`
+        }) 
+      });
       const data = await res.json();
       if (data.success) setCalendarSha(data.sha);
     } catch (e) { console.error('Save error:', e); }
   };
   
-  const handleLogout = () => { setLogged(false); setPage('home'); setShifts([]); setVacation(null); setCalendarSha(null); };
+  const handleLogin = (userData) => { setCurrentUser(userData); };
+  const handleLogout = () => { setCurrentUser(null); setUser(null); setPage('home'); setShifts([]); setVacation(null); setCalendarSha(null); };
   const addShift = (s) => { setShifts(prev => [...prev.filter(x => x.date !== s.date), s].sort((a,b) => new Date(a.date) - new Date(b.date))); };
   const addVacation = (v) => setVacation(v);
+  const updateUser = (u) => setUser(u);
   const nextShift = shifts.filter(s => new Date(s.date) >= new Date()).sort((a,b) => new Date(a.date) - new Date(b.date))[0] || null;
   const titles = { home: 'Strona domowa', shifts: 'Zmiany', preferences: 'Wniosek o zmiany', holidays: 'Czas wolny', workedTime: 'Przepracowany Czas', userData: 'Dane użytkownika', about: 'O Aplikacji' };
   
-  if (!logged) return <LoginScreen onLogin={() => setLogged(true)} />;
+  if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
+  if (!user) return <div className="min-h-screen bg-slate-50 flex items-center justify-center"><Cloud size={48} className="text-cyan-500 animate-pulse" /></div>;
   
   return (
     <div className="min-h-screen bg-slate-50">
@@ -387,7 +338,7 @@ function REXCloudApp() {
       {page === 'preferences' && <PreferencesPage date={date} onDateChange={setDate} onAddShift={addShift} />}
       {page === 'holidays' && <HolidaysPage vacation={vacation} onAddVacation={addVacation} />}
       {page === 'workedTime' && <StatisticsPage shifts={shifts} hourlyRate={user.hourlyRate || 0} />}
-      {page === 'userData' && <UserDataPage user={user} onUpdate={setUser} />}
+      {page === 'userData' && <UserDataPage user={user} onUpdate={updateUser} />}
       {page === 'about' && <AboutPage />}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 flex justify-around z-10">
         {[['home', Home, 'Home'], ['shifts', Calendar, 'Zmiany'], ['preferences', Plus, 'Wnioski'], ['holidays', Umbrella, 'Urlopy']].map(([id, Icon, label]) => (
