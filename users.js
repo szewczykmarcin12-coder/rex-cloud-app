@@ -27,7 +27,7 @@ export const USERS = [
     // PIN "4917" -> SHA-256
     pinHash: '8eebb0799014a38852ffad12b8ba8c3fad326e1b92f83a01549c4e69b0bb9893',
     // Unikalny identyfikator kalendarza użytkownika (używany w GitHub repo)
-    calendarId: 'kalendarz_ms',
+    calendarId: 'kalendarz',
     // Dane profilu
     profile: {
       name: 'MARCIN SZEWCZYK',
