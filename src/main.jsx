@@ -15,6 +15,8 @@ const positionColors = {
   'SUP': '#DC2626',  // Czerwony - Wsparcie
   'RUN': '#7C3AED',  // Fioletowy - Runner
   'SIN': '#FDA785',  // Brzoskwiniowy - Sink
+  'TRA': '#656f7d',  // szary - Train
+  'MGR': '#163c73',  // szafirowy nasycony - zmiany mgr
   'LOB': '#64748B'   // Szary - Lobby
 };
 
