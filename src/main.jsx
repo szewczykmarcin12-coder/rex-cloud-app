@@ -2,13 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, User, Plus, Cloud, TrendingUp, DollarSign, BarChart3, Lock, Users, MapPin, AlertCircle } from 'lucide-react';
 
-// ============================================
-// KONFIGURACJA API I PALETA KOLORÓW
-// ============================================
 const API_URL = 'https://rex-cloud-backend.vercel.app/api/calendar';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 
-// ZAKTUALIZOWANE POZYCJE - dodane TRA i MGR
 const positionColors = { 
   'KIT': '#7CB342', 'CAS': '#00A3E0', 'SUP': '#E74C3C', 'RUN': '#9C27B0',
   'SIN': '#FDA785', 'LOB': '#64748B', 'TRA': '#6B7280', 'MGR': '#1E3A8A'
@@ -51,7 +47,7 @@ const authenticateUser = async (email, pin) => {
   const pinHash = await hashPassword(pin.trim());
   for (const user of USERS) {
     if (user.profile.email.toLowerCase() === emailLower && user.pinHash === pinHash) {
-      const savedProfile = loadFromStorage(\`profile_\${user.id}\`);
+      const savedProfile = loadFromStorage('profile_' + user.id);
       const profile = savedProfile ? { ...user.profile, ...savedProfile } : { ...user.profile };
       return { id: user.id, profile };
     }
@@ -98,7 +94,7 @@ const LoginScreen = ({ onLogin }) => {
     setLoading(false);
   };
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{background: \`linear-gradient(to bottom, #051845, \${colors.primary.darkest})\`}}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #051845, ' + colors.primary.darkest + ')'}}>
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-12">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{backgroundColor: colors.primary.medium}}><Cloud size={32} className="text-white" /></div>
@@ -140,7 +136,7 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
       <div className="grid grid-cols-7 gap-1 p-2">
         {dayNames.map(d => <div key={d} className="text-center text-xs font-medium py-2 rounded-lg" style={{backgroundColor: colors.primary.bg, color: colors.primary.light}}>{d}</div>)}
         {days.map((item, i) => { const sh = item.current ? getShifts(item.day) : []; return (
-          <button key={i} onClick={() => item.current && onDayClick(item.day === selectedDay ? null : item.day)} className={\`flex flex-col items-center py-2 rounded-full \${!item.current ? 'text-slate-300' : ''}\`} style={getHighlightStyle(item)}>
+          <button key={i} onClick={() => item.current && onDayClick(item.day === selectedDay ? null : item.day)} className={'flex flex-col items-center py-2 rounded-full ' + (!item.current ? 'text-slate-300' : '')} style={getHighlightStyle(item)}>
             <span className="text-sm font-medium">{item.day}</span>
             {sh.length > 0 && item.current && <div className="flex gap-0.5 mt-1">{sh.slice(0,3).map((s,j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: s.color}} />)}</div>}
           </button>
@@ -154,8 +150,8 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) =
   const items = [{ id: 'home', icon: Home, label: 'Strona domowa' }, { id: 'shifts', icon: Calendar, label: 'Zmiany' }, { id: 'holidays', icon: Umbrella, label: 'Czas wolny' }, { id: 'workedTime', icon: Clock, label: 'Przepracowany Czas' }, { id: 'userData', icon: User, label: 'Dane użytkownika' }, { id: 'about', icon: Info, label: 'O Aplikacji' }];
   return (<>
     {isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
-    <div className={\`fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform flex flex-col \${isOpen ? 'translate-x-0' : '-translate-x-full'}\`}>
-      <div className="p-4 pt-8" style={{background: \`linear-gradient(to right, \${colors.primary.darkest}, \${colors.primary.dark})\`}}>
+    <div className={'fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform flex flex-col ' + (isOpen ? 'translate-x-0' : '-translate-x-full')}>
+      <div className="p-4 pt-8" style={{background: 'linear-gradient(to right, ' + colors.primary.darkest + ', ' + colors.primary.dark + ')'}}>
         <div className="flex items-center gap-2 mb-4"><Cloud size={24} className="text-white" /><span className="text-white text-lg font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span></span></div>
       </div>
       <div className="p-4 border-b flex items-center gap-3">
@@ -173,7 +169,7 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) =
 };
 
 const Header = ({ title, onMenuClick }) => (
-  <div className="text-white px-4 py-4 flex items-center justify-between sticky top-0 z-30" style={{background: \`linear-gradient(to right, \${colors.primary.dark}, \${colors.primary.darkest})\`}}>
+  <div className="text-white px-4 py-4 flex items-center justify-between sticky top-0 z-30" style={{background: 'linear-gradient(to right, ' + colors.primary.dark + ', ' + colors.primary.darkest + ')'}}>
     <div className="flex items-center gap-3"><Cloud size={24} /><span className="text-lg font-medium">{title}</span></div>
     <button onClick={onMenuClick} className="p-2"><Menu size={24} /></button>
   </div>
@@ -200,7 +196,7 @@ const SwipeableShiftCard = ({ shift, onShowCoworkers, isRevealed, onReveal, isSe
       <div className="absolute right-0 top-0 bottom-0 w-20 flex items-center justify-center rounded-r-xl" style={{backgroundColor: colors.primary.medium}}>
         <button onClick={() => onShowCoworkers(shift)} className="w-full h-full flex items-center justify-center"><Users size={28} className="text-white" /></button>
       </div>
-      <div className="relative p-4 transition-all duration-200" style={{ transform: \`translateX(-\${isRevealed ? 70 : translateX}px)\`, backgroundColor: isHighlighted ? colors.primary.bg : 'white', borderLeft: \`4px solid \${colors.primary.medium}\` }}
+      <div className="relative p-4 transition-all duration-200" style={{ transform: 'translateX(-' + (isRevealed ? 70 : translateX) + 'px)', backgroundColor: isHighlighted ? colors.primary.bg : 'white', borderLeft: '4px solid ' + colors.primary.medium }}
         onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave}>
         <div className="flex gap-4">
           <div className="rounded-xl px-3 py-2 text-center min-w-14" style={{backgroundColor: isHighlighted ? colors.primary.bgLight : colors.primary.bg}}>
@@ -220,7 +216,7 @@ const SwipeableShiftCard = ({ shift, onShowCoworkers, isRevealed, onReveal, isSe
 const CoworkersModal = ({ shift, onClose }) => {
   if (!shift) return null;
   const shiftDate = new Date(shift.date);
-  const formattedDate = \`\${dayNamesFull[shiftDate.getDay()]}, \${shiftDate.getDate()} \${monthNames[shiftDate.getMonth()].toLowerCase()} \${shiftDate.getFullYear()}\`;
+  const formattedDate = dayNamesFull[shiftDate.getDay()] + ', ' + shiftDate.getDate() + ' ' + monthNames[shiftDate.getMonth()].toLowerCase() + ' ' + shiftDate.getFullYear();
   const coworkers = [];
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
@@ -253,7 +249,7 @@ const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHoliday
   const formatDate = (d) => d.getDate()+'.'+String(d.getMonth()+1).padStart(2,'0');
   return (
     <div className="p-4 space-y-4 pb-24">
-      <div className="bg-white rounded-2xl shadow-sm p-4 cursor-pointer" style={{borderLeft: `4px solid ${colors.primary.medium}`}} onClick={onNavigateToShifts}>
+      <div className="bg-white rounded-2xl shadow-sm p-4 cursor-pointer" style={{borderLeft: '4px solid ' + colors.primary.medium}} onClick={onNavigateToShifts}>
         <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Następna zmiana</h3><Calendar size={24} style={{color: colors.primary.medium}} /></div>
         {nextShift ? (
           <div className="flex gap-4">
@@ -274,7 +270,7 @@ const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHoliday
           </div>
         ) : (<div className="text-center py-4"><Cloud size={40} className="text-slate-200 mx-auto mb-2" /><p className="text-slate-500">Brak zaplanowanych zmian</p></div>)}
       </div>
-      <div className="bg-white rounded-2xl shadow-sm p-4 cursor-pointer" style={{borderLeft: `4px solid ${colors.accent.dark}`}} onClick={onNavigateToHolidays}>
+      <div className="bg-white rounded-2xl shadow-sm p-4 cursor-pointer" style={{borderLeft: '4px solid ' + colors.accent.dark}} onClick={onNavigateToHolidays}>
         <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Następny urlop</h3><Umbrella size={24} style={{color: colors.accent.dark}} /></div>
         {vacation ? (
           <div className="flex gap-4">
@@ -381,7 +377,7 @@ const PreferencesPage = ({ date, onDateChange, requests, onAddRequest }) => {
       <div className="p-4">
         <button onClick={() => { setShowModal(true); setError(''); }} className="flex items-center gap-2 font-medium mb-4" style={{color: colors.primary.medium}}><Plus size={20} /><span className="underline">Nowy wniosek o zmianę</span></button>
         {filteredRequests.length === 0 ? (<div className="text-center py-12"><Cloud size={48} className="text-slate-300 mx-auto mb-4" /><p className="text-slate-500">Brak wniosków w tym miesiącu</p></div>) : filteredRequests.map(p => (
-          <div key={p.id} className="bg-white rounded-xl shadow-sm p-4 mb-3" style={{borderLeft: `4px solid ${colors.accent.dark}`}}>
+          <div key={p.id} className="bg-white rounded-xl shadow-sm p-4 mb-3" style={{borderLeft: '4px solid ' + colors.accent.dark}}>
             <div className="flex items-center gap-4">
               <div className="rounded-xl px-3 py-2 text-center min-w-14" style={{backgroundColor: colors.accent.bg}}>
                 <p className="text-xs" style={{color: colors.accent.dark}}>{p.dayName}</p>
@@ -438,7 +434,7 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
       <div className="p-4">
         <button onClick={() => setShowModal(true)} className="flex items-center gap-2 font-medium mb-4" style={{color: colors.accent.dark}}><Plus size={20} /><span className="underline">Dodaj nowy urlop</span></button>
         {vacation ? (
-          <div className="bg-white rounded-2xl shadow-sm p-4" style={{borderLeft: `4px solid ${colors.accent.dark}`}}>
+          <div className="bg-white rounded-2xl shadow-sm p-4" style={{borderLeft: '4px solid ' + colors.accent.dark}}>
             <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Zaplanowany urlop</h3><Umbrella size={24} style={{color: colors.accent.dark}} /></div>
             <div className="flex gap-4">
               <div className="rounded-xl p-3 text-center min-w-16" style={{backgroundColor: colors.accent.bg}}>
@@ -494,7 +490,7 @@ const BarChart = ({ data, maxValue }) => (
     {data.map((item, i) => { const height = maxValue > 0 ? (item.value / maxValue) * 100 : 0; return (
       <div key={i} className="flex flex-col items-center flex-1">
         <span className="text-xs font-semibold mb-1">{item.value.toFixed(0)}h</span>
-        <div className="w-full rounded-t-lg transition-all duration-500" style={{ height: `${Math.max(height, 5)}%`, backgroundColor: colors.primary.medium, opacity: i === data.length - 1 ? 1 : 0.6 }} />
+        <div className="w-full rounded-t-lg transition-all duration-500" style={{ height: Math.max(height, 5) + '%', backgroundColor: colors.primary.medium, opacity: i === data.length - 1 ? 1 : 0.6 }} />
         <span className="text-xs text-slate-500 mt-2">{item.label}</span>
       </div>
     ); })}
@@ -509,7 +505,7 @@ const PositionBreakdown = ({ positions }) => {
       {Object.entries(positions).filter(([_, hours]) => hours > 0).map(([pos, hours]) => { const percent = (hours / total) * 100; return (
         <div key={pos} className="flex items-center gap-3">
           <span className="text-sm font-medium w-10">{pos}</span>
-          <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${percent}%`, backgroundColor: positionColors[pos] }} /></div>
+          <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-500" style={{ width: percent + '%', backgroundColor: positionColors[pos] }} /></div>
           <span className="text-sm text-slate-600 w-16 text-right">{hours.toFixed(1)}h</span>
         </div>
       ); })}
@@ -572,13 +568,13 @@ const UserDataPage = ({ user, onUpdate, userId }) => {
   const save = () => {
     const updatedUser = { ...form, hourlyRate: parseFloat(form.hourlyRate) || 0, initials: form.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() };
     onUpdate(updatedUser);
-    saveToStorage(`profile_${userId}`, updatedUser);
+    saveToStorage('profile_' + userId, updatedUser);
     setSaved(true); setTimeout(() => setSaved(false), 2000);
   };
   return (
     <div className="min-h-screen bg-slate-50 p-4 pb-24">
       <div className="bg-white rounded-2xl overflow-hidden">
-        <div className="p-6 text-center" style={{background: `linear-gradient(to right, ${colors.primary.darkest}, ${colors.primary.dark})`}}>
+        <div className="p-6 text-center" style={{background: 'linear-gradient(to right, ' + colors.primary.darkest + ', ' + colors.primary.dark + ')'}}>
           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3"><span className="font-bold text-2xl" style={{color: colors.primary.medium}}>{user.initials}</span></div>
           <h2 className="text-white text-xl font-semibold">{form.name}</h2>
           <p className="text-sm mt-1" style={{color: colors.primary.bg}}>Konto zabezpieczone</p>
@@ -599,7 +595,7 @@ const UserDataPage = ({ user, onUpdate, userId }) => {
 const AboutPage = () => (
   <div className="min-h-screen bg-slate-50 p-4 pb-24">
     <div className="bg-white rounded-2xl overflow-hidden">
-      <div className="p-8 text-center" style={{background: `linear-gradient(to right, ${colors.primary.darkest}, ${colors.primary.dark})`}}>
+      <div className="p-8 text-center" style={{background: 'linear-gradient(to right, ' + colors.primary.darkest + ', ' + colors.primary.dark + ')'}}>
         <Cloud size={40} className="text-white mx-auto mb-4" />
         <span className="text-white text-2xl font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span></span>
         <p className="mt-2" style={{color: colors.primary.bg}}>v3.5.0</p>
