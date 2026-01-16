@@ -65,58 +65,7 @@ const dayNamesFull = ['niedziela', 'poniedziałek', 'wtorek', 'środa', 'czwarte
 
 // ============================================
 // LOCAL STORAGE HELPERS
-// ============================================
-const saveToStorage = (key, data) => {
-  try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { console.error('Storage save error:', e); }
-};
-
-const loadFromStorage = (key, defaultValue = null) => {
-  try { const data = localStorage.getItem(key); return data ? JSON.parse(data) : defaultValue; } catch (e) { return defaultValue; }
-};
-
-// ============================================
-// SYSTEM UŻYTKOWNIKÓW Z HASHOWANIEM
-// ============================================
-const hashPassword = async (password) => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-};
-
-const USERS = [
-  {
-    id: 'user_ms_001',
-    pinHash: '8eebb0799014a38852ffad12b8ba8c3fad326e1b92f83a01549c4e69b0bb9893',
-    profile: {
-      name: 'MARCIN SZEWCZYK',
-      initials: 'MS',
-      email: 'szewczyk.marcin12@gmail.com',
-      company: 'Rex Concepts',
-      phone: '',
-      address: 'Kraków',
-      hourlyRate: 0
-    }
-  }
-];
-
-const authenticateUser = async (email, pin) => {
-  const emailLower = email.toLowerCase().trim();
-  const pinHash = await hashPassword(pin.trim());
-
-  for (const user of USERS) {
-    if (user.profile.email.toLowerCase() === emailLower && user.pinHash === pinHash) {
-      const savedProfile = loadFromStorage(`profile_${user.id}`);
-      const profile = savedProfile ? { ...user.profile, ...savedProfile } : { ...user.profile };
-      return { id: user.id, profile };
-    }
-  }
-  return null;
-};
-
-// ============================================
-// ICS PARSER & GENERATOR
+@@ -101,7 +91,7 @@ const authenticateUser = async (email, pin) => {
 // ============================================
 const parseICS = (icsContent) => {
   const shifts = [];
@@ -125,8 +74,7 @@ const parseICS = (icsContent) => {
   icsContent.split('BEGIN:VEVENT').slice(1).forEach((block, i) => {
     try {
       const get = (f) => { const m = block.match(new RegExp(f + '[^:]*:(.+?)(?:\\r?\\n|$)')); return m ? m[1].trim() : null; };
-      const dtstart = get('DTSTART'), dtend = get('DTEND'), summary = get('SUMMARY'), location = get('LOCATION') || DEFAULT_LOCATION, uid = get('UID');
-      if (dtstart && summary) {
+@@ -110,9 +100,21 @@ const parseICS = (icsContent) => {
         const parseDate = (s) => { if (!s) return null; const c = s.replace('Z', '').replace(/[^0-9T]/g, ''); return new Date(parseInt(c.substring(0,4)), parseInt(c.substring(4,6))-1, parseInt(c.substring(6,8)), parseInt(c.substring(9,11))||0, parseInt(c.substring(11,13))||0); };
         const start = parseDate(dtstart), end = parseDate(dtend);
         if (start) {
@@ -150,9 +98,7 @@ const parseICS = (icsContent) => {
         }
       }
     } catch(e) {}
-  });
-  return shifts.sort((a,b) => new Date(a.date) - new Date(b.date));
-};
+@@ -122,15 +124,18 @@ const parseICS = (icsContent) => {
 
 const generateICS = (shifts) => {
   const fmt = (d) => d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+'00';
@@ -177,20 +123,7 @@ const getTodayString = () => {
 // ============================================
 // LOGIN SCREEN
 // ============================================
-const LoginScreen = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async () => {
-    if (!email || !pin) { setError('Wprowadź email i PIN'); return; }
-    setLoading(true); setError('');
-    try {
-      const user = await authenticateUser(email, pin);
-      if (user) { onLogin(user); } else { setError('Nieprawidłowy email lub PIN'); }
-    } catch (e) { setError('Błąd logowania'); }
-    setLoading(false);
+@@ -151,19 +156,19 @@ const LoginScreen = ({ onLogin }) => {
   };
 
   return (
@@ -217,14 +150,7 @@ const LoginScreen = ({ onLogin }) => {
           </div>
           <p className="text-xs text-slate-400 text-center mt-4">Połączenie szyfrowane</p>
         </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================
-// UI COMPONENTS
-// ============================================
+@@ -178,24 +183,13 @@ const LoginScreen = ({ onLogin }) => {
 const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) => {
   const year = date.getFullYear(), month = date.getMonth();
   const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0), startDay = (firstDay.getDay() + 6) % 7;
@@ -253,8 +179,7 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
   return (
     <div className="bg-white">
       <div className="flex items-center justify-between px-4 py-4 border-b">
-        <button onClick={() => onDateChange(new Date(year, month-1, 1))} className="p-2"><ChevronLeft size={24} /></button>
-        <span className="text-lg font-semibold">{monthNames[month]} {year}</span>
+@@ -204,16 +198,12 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
         <button onClick={() => onDateChange(new Date(year, month+1, 1))} className="p-2"><ChevronRight size={24} /></button>
       </div>
       <div className="grid grid-cols-7 gap-1 p-2">
@@ -274,11 +199,7 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
               <span className="text-sm font-medium">{item.day}</span>
               {sh.length > 0 && item.current && <div className="flex gap-0.5 mt-1">{sh.slice(0,3).map((s,j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: s.color}} />)}</div>}
             </button>
-          ); 
-        })}
-      </div>
-    </div>
-  );
+@@ -225,146 +215,65 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
 };
 
 const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) => {
@@ -453,10 +374,7 @@ const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHoliday
   const shiftCountdown = nextShift ? calcCountdown(nextShift.date, nextShift.shifts[0].time.split(' - ')[0]) : null;
   const vacCountdown = vacation ? calcCountdown(vacation.startDate) : { days: 0, hours: 0, min: 0 };
   const vacDate = vacation ? new Date(vacation.startDate) : null;
-  const vacEndDate = vacation ? new Date(vacation.endDate) : null;
-  const vacDayNames = ['NIEDZ', 'PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB'];
-  const formatDate = (d) => d.getDate()+'.'+String(d.getMonth()+1).padStart(2,'0');
-
+@@ -375,17 +284,17 @@ const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHoliday
   return (
     <div className="p-4 space-y-4 pb-24">
       {/* Następna zmiana */}
@@ -479,11 +397,7 @@ const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHoliday
             </div>
             <div className="flex-1">
               {nextShift.shifts.map((s, i) => (
-                <div key={i} className="flex items-center gap-2 mb-1">
-                  <Clock size={16} className="text-slate-400" />
-                  <span>{s.time}</span>
-                  <span className="text-sm px-2 py-0.5 rounded" style={{backgroundColor: s.color+'20', color: s.color}}>{s.type}</span>
-                </div>
+@@ -397,145 +306,259 @@ const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHoliday
               ))}
               <p className="text-slate-500 text-sm mt-1">{nextShift.location}</p>
               <div className="flex gap-4 mt-4 pt-3 border-t">
@@ -802,10 +716,7 @@ const PreferencesPage = ({ date, onDateChange, requests, onAddRequest }) => {
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-};
+@@ -546,36 +569,58 @@ const PreferencesPage = ({ date, onDateChange, onAddShift }) => {
 
 const HolidaysPage = ({ vacation, onAddVacation }) => {
   const [showModal, setShowModal] = useState(false);
@@ -876,8 +787,7 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
                   <div className="text-center"><p className="text-2xl font-bold">{vacCountdown.hours}</p><p className="text-xs text-slate-500">godz</p></div>
                   <div className="text-center"><p className="text-2xl font-bold">{vacCountdown.min}</p><p className="text-xs text-slate-500">min</p></div>
                 </div>
-              </div>
-            </div>
+@@ -584,9 +629,9 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
@@ -889,8 +799,7 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
           </div>
         )}
       </div>
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+@@ -595,14 +640,14 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
           <div className="bg-white w-full max-w-lg rounded-t-3xl p-6">
             <h3 className="text-xl font-semibold mb-6">Nowy wniosek urlopowy</h3>
             <div className="space-y-4">
@@ -910,11 +819,7 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-};
-
+@@ -614,21 +659,32 @@ const HolidaysPage = ({ vacation, onAddVacation }) => {
 // ============================================
 // STATISTICS PAGE
 // ============================================
@@ -950,22 +855,7 @@ const BarChart = ({ data, maxValue, color = '#00A3E0' }) => (
 const PositionBreakdown = ({ positions }) => { 
   const total = Object.values(positions).reduce((a, b) => a + b, 0); 
   if (total === 0) return null; 
-  return (
-    <div className="space-y-2">
-      {Object.entries(positions).filter(([_, hours]) => hours > 0).map(([pos, hours]) => { 
-        const percent = (hours / total) * 100; 
-        return (
-          <div key={pos} className="flex items-center gap-3">
-            <span className="text-sm font-medium w-10">{pos}</span>
-            <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${percent}%`, backgroundColor: positionColors[pos] }} />
-            </div>
-            <span className="text-sm text-slate-600 w-16 text-right">{hours.toFixed(1)}h</span>
-          </div>
-        ); 
-      })}
-    </div>
-  ); 
+@@ -651,30 +707,75 @@ const PositionBreakdown = ({ positions }) => {
 };
 
 const StatisticsPage = ({ shifts, hourlyRate = 0 }) => {
@@ -1051,8 +941,7 @@ const StatisticsPage = ({ shifts, hourlyRate = 0 }) => {
         <BarChart data={chartData} maxValue={maxChartValue} />
         <div className="mt-4 pt-4 border-t flex justify-between text-sm">
           <div><span className="text-slate-500">Łącznie:</span><span className="font-semibold ml-2">{totalHours3Months.toFixed(1)}h</span></div>
-          <div><span className="text-slate-500">Średnia/mies.:</span><span className="font-semibold ml-2">{avgHoursPerMonth.toFixed(1)}h</span></div>
-        </div>
+@@ -683,33 +784,39 @@ const StatisticsPage = ({ shifts, hourlyRate = 0 }) => {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-4">
@@ -1099,24 +988,7 @@ const StatisticsPage = ({ shifts, hourlyRate = 0 }) => {
         </div>
       )}
     </div>
-  );
-};
-
-// ============================================
-// USER DATA PAGE
-// ============================================
-const UserDataPage = ({ user, onUpdate, userId }) => {
-  const [form, setForm] = useState(user);
-  const [saved, setSaved] = useState(false);
-
-  const save = () => {
-    const updatedUser = { ...form, hourlyRate: parseFloat(form.hourlyRate) || 0, initials: form.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() };
-    onUpdate(updatedUser);
-    saveToStorage(`profile_${userId}`, updatedUser);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
+@@ -734,20 +841,20 @@ const UserDataPage = ({ user, onUpdate, userId }) => {
   return (
     <div className="min-h-screen bg-slate-50 p-4 pb-24">
       <div className="bg-white rounded-2xl overflow-hidden">
@@ -1141,9 +1013,7 @@ const UserDataPage = ({ user, onUpdate, userId }) => {
         </div>
       </div>
     </div>
-  );
-};
-
+@@ -757,20 +864,24 @@ const UserDataPage = ({ user, onUpdate, userId }) => {
 const AboutPage = () => (
   <div className="min-h-screen bg-slate-50 p-4 pb-24">
     <div className="bg-white rounded-2xl overflow-hidden">
@@ -1174,13 +1044,7 @@ const AboutPage = () => (
         <p className="text-slate-500 text-sm text-center">© 2025 REX Cloud by M. Szewczyk</p>
       </div>
     </div>
-  </div>
-);
-
-// ============================================
-// MAIN APP
-// ============================================
-function REXCloudApp() {
+@@ -784,44 +895,99 @@ function REXCloudApp() {
   const [currentUser, setCurrentUser] = useState(null);
   const [sidebar, setSidebar] = useState(false);
   const [page, setPage] = useState('home');
@@ -1291,10 +1155,3 @@ function REXCloudApp() {
           <button key={id} onClick={() => setPage(id)} className={`flex flex-col items-center p-2 ${page === id ? 'text-cyan-500' : 'text-slate-400'}`}>
             <Icon size={24} /><span className="text-xs mt-1">{label}</span>
           </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<REXCloudApp />);
