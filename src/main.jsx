@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, User, Plus, Cloud, TrendingUp, DollarSign, BarChart3, Lock, Users, MapPin, AlertCircle } from 'lucide-react';
 
 // ============================================
-// KONFIGURACJA API I PALETA KOLORÓW
+// KONFIGURACJA API I PALETA KOLOnRÓW
 // ============================================
 const API_URL = 'https://rex-cloud-backend.vercel.app/api/calendar';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
