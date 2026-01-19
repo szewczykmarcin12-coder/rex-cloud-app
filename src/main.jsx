@@ -240,8 +240,29 @@ const CoworkersModal = ({ shift, onClose }) => {
 };
 
 const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHolidays }) => {
-  const calcCountdown = (dateStr, time) => { if (!dateStr) return { days: 0, hours: 0, min: 0 }; const target = new Date(dateStr); if (time) { const [h, m] = time.split(':'); target.setHours(+h, +m); } const diff = target - new Date(); if (diff <= 0) return { days: 0, hours: 0, min: 0 }; return { days: Math.floor(diff / 86400000), hours: Math.floor((diff % 86400000) / 3600000), min: Math.floor((diff % 3600000) / 60000) }; };
-  const shiftCountdown = nextShift ? calcCountdown(nextShift.date, nextShift.shifts[0].time.split(' - ')[0]) : null;
+  const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate(n => n + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
+  const calcCountdown = (dateStr, time) => { if (!dateStr) return { days: 0, hours: 0, min: 0 }; const target = new Date(dateStr); if (time) { const [h, m] = time.split(':'); target.setHours(+h, +m, 0, 0); } const diff = target - new Date(); if (diff <= 0) return { days: 0, hours: 0, min: 0 }; return { days: Math.floor(diff / 86400000), hours: Math.floor((diff % 86400000) / 3600000), min: Math.floor((diff % 3600000) / 60000) }; };
+  const getShiftCountdown = () => {
+    if (!nextShift) return { days: 0, hours: 0, min: 0, label: 'do rozpoczęcia' };
+    const now = new Date();
+    const [startTime, endTime] = nextShift.shifts[0].time.split(' - ');
+    const shiftStart = new Date(nextShift.date);
+    const [sh, sm] = startTime.split(':').map(Number);
+    shiftStart.setHours(sh, sm, 0, 0);
+    const shiftEnd = new Date(nextShift.date);
+    const [eh, em] = endTime.split(':').map(Number);
+    shiftEnd.setHours(eh, em, 0, 0);
+    if (now >= shiftStart && now < shiftEnd) {
+      const diff = shiftEnd - now;
+      return { days: 0, hours: Math.floor(diff / 3600000), min: Math.floor((diff % 3600000) / 60000), label: 'do końca zmiany' };
+    }
+    return { ...calcCountdown(nextShift.date, startTime), label: 'do rozpoczęcia' };
+  };
+  const shiftCountdown = getShiftCountdown();
   const vacCountdown = vacation ? calcCountdown(vacation.startDate) : { days: 0, hours: 0, min: 0 };
   const vacDate = vacation ? new Date(vacation.startDate) : null;
   const vacEndDate = vacation ? new Date(vacation.endDate) : null;
@@ -266,6 +287,7 @@ const HomePage = ({ nextShift, onNavigateToShifts, vacation, onNavigateToHoliday
                 <div className="text-center"><p className="text-2xl font-bold">{shiftCountdown.hours}</p><p className="text-xs text-slate-500">godz</p></div>
                 <div className="text-center"><p className="text-2xl font-bold">{shiftCountdown.min}</p><p className="text-xs text-slate-500">min</p></div>
               </div>
+              <p className="text-xs text-slate-400 text-center mt-2">{shiftCountdown.label}</p>
             </div>
           </div>
         ) : (<div className="text-center py-4"><Cloud size={40} className="text-slate-200 mx-auto mb-2" /><p className="text-slate-500">Brak zaplanowanych zmian</p></div>)}
@@ -640,7 +662,17 @@ function REXCloudApp() {
   const addVacation = (v) => setVacation(v);
   const updateUser = (u) => setUser(u);
   const todayStr = getTodayString();
-  const nextShift = shifts.filter(s => s.date >= todayStr).sort((a,b) => new Date(a.date) - new Date(b.date))[0] || null;
+  const now = new Date();
+  const nextShift = shifts.filter(s => {
+    if (s.date < todayStr) return false;
+    if (s.date > todayStr) return true;
+    // Dla dzisiejszej zmiany - sprawdź czy jeszcze się nie skończyła
+    const endTime = s.shifts[0].time.split(' - ')[1];
+    const [eh, em] = endTime.split(':').map(Number);
+    const shiftEnd = new Date(s.date);
+    shiftEnd.setHours(eh, em, 0, 0);
+    return now < shiftEnd;
+  }).sort((a,b) => new Date(a.date) - new Date(b.date))[0] || null;
   const titles = { home: 'Strona domowa', shifts: 'Zmiany', preferences: 'Wniosek o zmiany', holidays: 'Czas wolny', workedTime: 'Przepracowany Czas', userData: 'Dane użytkownika', about: 'O Aplikacji' };
 
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
