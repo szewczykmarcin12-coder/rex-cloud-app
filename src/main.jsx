@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { Calendar, Home, Umbrella, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, User, Plus, Cloud, TrendingUp, DollarSign, BarChart3, Lock, Users, MapPin, AlertCircle } from 'lucide-react';
 
 const API_URL = 'https://rex-cloud-backend.vercel.app/api/calendar';
+const REQUESTS_API_URL = 'https://rex-cloud-backend.vercel.app/api/requests';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 
 const positionColors = { 
@@ -367,9 +368,10 @@ const ShiftsPage = ({ date, onDateChange, shifts }) => {
   );
 };
 
-const PreferencesPage = ({ date, onDateChange, requests, onAddRequest }) => {
+const PreferencesPage = ({ date, onDateChange, requests, onAddRequest, user }) => {
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const todayStr = getTodayString();
   const [newPref, setNewPref] = useState({ date: todayStr, type: 'Pracuj', position: 'KIT', timeFrom: '08:00', timeTo: '16:00' });
   const types = ['Pracuj', 'Nie pracuj', 'Nie pracuj wcześniej', 'Nie pracuj później niż', 'Praca w godzinach'];
@@ -378,15 +380,62 @@ const PreferencesPage = ({ date, onDateChange, requests, onAddRequest }) => {
   const needsTo = ['Nie pracuj później niż', 'Praca w godzinach'].includes(newPref.type);
   const needsPos = newPref.type !== 'Nie pracuj';
 
+  // Mapowanie typów na format backendu
+  const typeMapping = { 'Pracuj': 'work', 'Nie pracuj': 'no_work', 'Nie pracuj wcześniej': 'no_early', 'Nie pracuj później niż': 'no_late', 'Praca w godzinach': 'hours' };
+
   const filteredRequests = requests.filter(r => { const reqDate = new Date(r.date); return reqDate.getMonth() === date.getMonth() && reqDate.getFullYear() === date.getFullYear(); });
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (newPref.date < todayStr) { setError('Nie można dodać wniosku w przeszłości'); return; }
     setError('');
-    const d = new Date(newPref.date); const dayNamesShort = ['NI', 'PO', 'WT', 'ŚR', 'CZ', 'PT', 'SO'];
-    const request = { id: Date.now(), date: newPref.date, dayName: dayNamesShort[d.getDay()], dayNum: d.getDate(), month: d.getMonth(), year: d.getFullYear(), type: newPref.type, position: needsPos ? newPref.position : null, timeFrom: needsFrom ? newPref.timeFrom : null, timeTo: needsTo ? newPref.timeTo : null, status: 'pending', createdAt: new Date().toISOString() };
-    onAddRequest(request);
-    setShowModal(false); setNewPref({ date: todayStr, type: 'Pracuj', position: 'KIT', timeFrom: '08:00', timeTo: '16:00' });
+    setLoading(true);
+    
+    const d = new Date(newPref.date); 
+    const dayNamesShort = ['NI', 'PO', 'WT', 'ŚR', 'CZ', 'PT', 'SO'];
+    
+    const request = { 
+      date: newPref.date, 
+      dayName: dayNamesShort[d.getDay()], 
+      dayNum: d.getDate(), 
+      month: d.getMonth(), 
+      year: d.getFullYear(), 
+      type: typeMapping[newPref.type] || 'work',
+      typeLabel: newPref.type,
+      position: needsPos ? newPref.position : null, 
+      timeFrom: needsFrom ? newPref.timeFrom : null, 
+      timeTo: needsTo ? newPref.timeTo : null, 
+      status: 'pending',
+      employeeId: user?.id || null,
+      employeeName: user?.name || 'Nieznany'
+    };
+
+    try {
+      const response = await fetch(REQUESTS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request })
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        onAddRequest(data.request);
+        setShowModal(false); 
+        setNewPref({ date: todayStr, type: 'Pracuj', position: 'KIT', timeFrom: '08:00', timeTo: '16:00' });
+      } else {
+        setError('Błąd: ' + (data.error || 'Nie udało się wysłać wniosku'));
+      }
+    } catch (e) {
+      console.error('Request error:', e);
+      setError('Błąd połączenia z serwerem');
+    }
+    setLoading(false);
+  };
+
+  // Pobierz status wniosku
+  const getStatusLabel = (status) => {
+    if (status === 'approved') return { text: 'Zatwierdzony', color: '#7CB342' };
+    if (status === 'rejected') return { text: 'Odrzucony', color: '#E74C3C' };
+    return { text: 'Oczekuje na zatwierdzenie', color: colors.accent.dark };
   };
 
   return (
@@ -398,22 +447,24 @@ const PreferencesPage = ({ date, onDateChange, requests, onAddRequest }) => {
       </div>
       <div className="p-4">
         <button onClick={() => { setShowModal(true); setError(''); }} className="flex items-center gap-2 font-medium mb-4" style={{color: colors.primary.medium}}><Plus size={20} /><span className="underline">Nowy wniosek o zmianę</span></button>
-        {filteredRequests.length === 0 ? (<div className="text-center py-12"><Cloud size={48} className="text-slate-300 mx-auto mb-4" /><p className="text-slate-500">Brak wniosków w tym miesiącu</p></div>) : filteredRequests.map(p => (
-          <div key={p.id} className="bg-white rounded-xl shadow-sm p-4 mb-3" style={{borderLeft: '4px solid ' + colors.accent.dark}}>
+        {filteredRequests.length === 0 ? (<div className="text-center py-12"><Cloud size={48} className="text-slate-300 mx-auto mb-4" /><p className="text-slate-500">Brak wniosków w tym miesiącu</p></div>) : filteredRequests.map(p => {
+          const statusInfo = getStatusLabel(p.status);
+          return (
+          <div key={p.id} className="bg-white rounded-xl shadow-sm p-4 mb-3" style={{borderLeft: '4px solid ' + statusInfo.color}}>
             <div className="flex items-center gap-4">
               <div className="rounded-xl px-3 py-2 text-center min-w-14" style={{backgroundColor: colors.accent.bg}}>
                 <p className="text-xs" style={{color: colors.accent.dark}}>{p.dayName}</p>
                 <p className="text-xl font-bold">{p.dayNum}</p>
               </div>
               <div className="flex-1">
-                <p className="font-medium">{p.type}</p>
+                <p className="font-medium">{p.typeLabel || p.type}</p>
                 {p.position && <p className="text-sm text-slate-600">{p.position} - {positionNames[p.position]}</p>}
                 {(p.timeFrom || p.timeTo) && <p className="text-sm text-slate-500">{p.timeFrom && 'od '+p.timeFrom} {p.timeTo && 'do '+p.timeTo}</p>}
-                <div className="flex items-center gap-2 mt-2"><AlertCircle size={14} style={{color: colors.accent.dark}} /><span className="text-xs font-medium" style={{color: colors.accent.dark}}>Oczekuje na zatwierdzenie</span></div>
+                <div className="flex items-center gap-2 mt-2"><AlertCircle size={14} style={{color: statusInfo.color}} /><span className="text-xs font-medium" style={{color: statusInfo.color}}>{statusInfo.text}</span></div>
               </div>
             </div>
           </div>
-        ))}
+        )})}
       </div>
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
@@ -429,8 +480,8 @@ const PreferencesPage = ({ date, onDateChange, requests, onAddRequest }) => {
               <div className="p-3 rounded-xl text-sm flex items-center gap-2" style={{backgroundColor: colors.accent.bg, color: colors.accent.dark}}><AlertCircle size={18} /><span>Wniosek zostanie przesłany do administratora i będzie oczekiwał na zatwierdzenie</span></div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowModal(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-semibold">Anuluj</button>
-              <button onClick={handleAdd} className="flex-1 py-3 text-white rounded-xl font-semibold" style={{backgroundColor: colors.primary.medium}}>Złóż wniosek</button>
+              <button onClick={() => setShowModal(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-semibold" disabled={loading}>Anuluj</button>
+              <button onClick={handleAdd} disabled={loading} className="flex-1 py-3 text-white rounded-xl font-semibold" style={{backgroundColor: loading ? colors.primary.light : colors.primary.medium}}>{loading ? 'Wysyłanie...' : 'Złóż wniosek'}</button>
             </div>
           </div>
         </div>
@@ -644,20 +695,34 @@ function REXCloudApp() {
   const [date, setDate] = useState(() => new Date());
   const [user, setUser] = useState(null);
   const [shifts, setShifts] = useState([]);
-  const [requests, setRequests] = useState(() => loadFromStorage('shift_requests', []));
+  const [requests, setRequests] = useState([]);
   const [vacation, setVacation] = useState(null);
   const [calendarSha, setCalendarSha] = useState(null);
   const [initialSyncDone, setInitialSyncDone] = useState(false);
 
-  useEffect(() => { if (currentUser) { setUser(currentUser.profile); syncFromGitHub(); } }, [currentUser]);
-  useEffect(() => { if (requests.length > 0) { saveToStorage('shift_requests', requests); } }, [requests]);
+  // Sync requests from API
+  const syncRequests = async () => {
+    try {
+      const res = await fetch(REQUESTS_API_URL);
+      const data = await res.json();
+      if (data.success && data.requests) {
+        // Filtruj tylko wnioski tego użytkownika
+        const userRequests = currentUser 
+          ? data.requests.filter(r => r.employeeId === currentUser.id || r.employeeName === currentUser.profile?.name)
+          : data.requests;
+        setRequests(userRequests);
+      }
+    } catch (e) { console.error('Requests sync error:', e); }
+  };
+
+  useEffect(() => { if (currentUser) { setUser(currentUser.profile); syncFromGitHub(); syncRequests(); } }, [currentUser]);
   useEffect(() => { if (currentUser && initialSyncDone && shifts.length > 0) { const timer = setTimeout(() => saveToGitHub(), 1500); return () => clearTimeout(timer); } }, [shifts, initialSyncDone]);
 
   const syncFromGitHub = async () => { try { const res = await fetch(API_URL); const data = await res.json(); if (data.success && data.content) { const parsed = parseICS(data.content); setShifts(parsed); setCalendarSha(data.sha); } setInitialSyncDone(true); } catch (e) { console.error('Sync error:', e); setInitialSyncDone(true); } };
   const saveToGitHub = async () => { if (!calendarSha) return; try { const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: generateICS(shifts), sha: calendarSha, message: 'Auto-sync from REX Cloud' }) }); const data = await res.json(); if (data.success) setCalendarSha(data.sha); } catch (e) { console.error('Save error:', e); } };
 
   const handleLogin = (userData) => { setCurrentUser(userData); };
-  const handleLogout = () => { setCurrentUser(null); setUser(null); setPage('home'); setShifts([]); setVacation(null); setCalendarSha(null); setInitialSyncDone(false); };
+  const handleLogout = () => { setCurrentUser(null); setUser(null); setPage('home'); setShifts([]); setRequests([]); setVacation(null); setCalendarSha(null); setInitialSyncDone(false); };
   const addRequest = (req) => { setRequests(prev => [...prev, req]); };
   const addVacation = (v) => setVacation(v);
   const updateUser = (u) => setUser(u);
@@ -684,7 +749,7 @@ function REXCloudApp() {
       <Header title={titles[page] || 'REX Cloud'} onMenuClick={() => setSidebar(true)} />
       {page === 'home' && <HomePage nextShift={nextShift} onNavigateToShifts={() => setPage('shifts')} vacation={vacation} onNavigateToHolidays={() => setPage('holidays')} />}
       {page === 'shifts' && <ShiftsPage date={date} onDateChange={setDate} shifts={shifts} />}
-      {page === 'preferences' && <PreferencesPage date={date} onDateChange={setDate} requests={requests} onAddRequest={addRequest} />}
+      {page === 'preferences' && <PreferencesPage date={date} onDateChange={setDate} requests={requests} onAddRequest={addRequest} user={{ id: currentUser.id, name: user.name }} />}
       {page === 'holidays' && <HolidaysPage vacation={vacation} onAddVacation={addVacation} />}
       {page === 'workedTime' && <StatisticsPage shifts={shifts} hourlyRate={user.hourlyRate || 0} />}
       {page === 'userData' && <UserDataPage user={user} onUpdate={updateUser} userId={currentUser.id} />}
