@@ -19,9 +19,22 @@ const stationColors = {
   'KONTROLER': '#1E3A8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#FF7043',
   'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#FBC02D', 'ZMYWAK': '#64748B',
   'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#082567', 'MGR FUNKCYJNE': '#455A64',
-  'SZKOLENIA': '#26A69A'
+  'SZKOLENIA': '#26A69A', 'TRAINING': '#26A69A', 'INSTRUKTOR': '#00796B'
 };
 const stationColor = (s) => stationColors[(s || '').toUpperCase()] || colors.primary.medium;
+const nazwaStanowiska = (st) => {
+  const u = (st || '').toLowerCase();
+  if (u === 'training') return 'Szkolenie (uczeń)';
+  if (u === 'instruktor') return 'Szkolenie (instruktor)';
+  return st;
+};
+const paraLabel = (shift) => {
+  if (!shift.partner) return null;
+  const u = (shift.station || '').toLowerCase();
+  if (u === 'training') return { rola: 'Instruktor', osoba: shift.partner };
+  if (u === 'instruktor') return { rola: 'Szkoli', osoba: shift.partner };
+  return null;
+};
 
 const monthNames = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
 const dayNames = ['PON','WT','ŚR','CZW','PT','SOB','NIEDZ'];
@@ -176,8 +189,14 @@ const ShiftCard = ({ shift, isToday }) => {
           </div>
           <div className="flex items-center gap-2 mt-1">
             <Briefcase size={14} style={{color: stationColor(shift.station)}} />
-            <span className="text-sm font-medium" style={{color: stationColor(shift.station)}}>{shift.station}</span>
+            <span className="text-sm font-medium" style={{color: stationColor(shift.station)}}>{nazwaStanowiska(shift.station)}</span>
           </div>
+          {paraLabel(shift) && (
+            <div className="flex items-center gap-2 mt-1">
+              <Search size={14} style={{color: stationColor(shift.station)}} />
+              <span className="text-sm" style={{color: colors.primary.dark}}>{paraLabel(shift).rola}: <span className="font-semibold">{paraLabel(shift).osoba}</span></span>
+            </div>
+          )}
           <div className="flex items-center gap-2 mt-1"><MapPin size={14} className="text-slate-400" /><span className="text-slate-500 text-sm">{DEFAULT_LOCATION}</span></div>
         </div>
       </div>
