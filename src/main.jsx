@@ -22,18 +22,25 @@ const stationColors = {
   'SZKOLENIA': '#26A69A', 'TRAINING': '#26A69A', 'INSTRUKTOR': '#00796B'
 };
 const stationColor = (s) => stationColors[(s || '').toUpperCase()] || colors.primary.medium;
-const nazwaStanowiska = (st) => {
-  const u = (st || '').toLowerCase();
-  if (u === 'training') return 'Szkolenie (uczeń)';
-  if (u === 'instruktor') return 'Szkolenie (instruktor)';
-  return st;
+const rolaSzk = (s) => {
+  const r = (s.rola || '').toLowerCase();
+  if (r === 'instruktor' || r === 'training') return r;
+  const st = (s.station || '').toLowerCase();
+  if (st === 'instruktor' || st === 'training') return st;
+  return null;
+};
+// Etykieta pozycji — stare dane 'training'/'instruktor' pokazują "Szkolenie"
+const nazwaStanowiska = (s) => {
+  const u = (s.station || '').toLowerCase();
+  if (u === 'training' || u === 'instruktor') return 'Szkolenie';
+  return s.station;
 };
 const paraLabel = (shift) => {
-  if (!shift.partner) return null;
-  const u = (shift.station || '').toLowerCase();
-  if (u === 'training') return { rola: 'Instruktor', osoba: shift.partner };
-  if (u === 'instruktor') return { rola: 'Szkoli', osoba: shift.partner };
-  return null;
+  const r = rolaSzk(shift);
+  if (!r) return null;
+  return r === 'instruktor'
+    ? { rola: 'Szkolenie · szkoli', osoba: shift.partner || '' }
+    : { rola: 'Szkolenie · instruktor', osoba: shift.partner || '' };
 };
 
 const monthNames = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
@@ -189,7 +196,7 @@ const ShiftCard = ({ shift, isToday }) => {
           </div>
           <div className="flex items-center gap-2 mt-1">
             <Briefcase size={14} style={{color: stationColor(shift.station)}} />
-            <span className="text-sm font-medium" style={{color: stationColor(shift.station)}}>{nazwaStanowiska(shift.station)}</span>
+            <span className="text-sm font-medium" style={{color: stationColor(shift.station)}}>{nazwaStanowiska(shift)}</span>
           </div>
           {paraLabel(shift) && (
             <div className="flex items-center gap-2 mt-1">
