@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase } from 'lucide-react';
+import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw } from 'lucide-react';
 
 // ===================== CONFIG =====================
 const API_BASE = 'https://rex-cloud-backend.vercel.app/api';
@@ -52,6 +52,21 @@ const loadFromStorage = (k, def = null) => { try { const d = localStorage.getIte
 const getTodayString = () => { const t = new Date(); return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); };
 
 const api = async (path) => { const r = await fetch(`${API_BASE}${path}`); return r.json(); };
+const apiSend = async (path, method, body) => { const r = await fetch(`${API_BASE}${path}`, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); return r.json(); };
+
+const normalizeName = (n) => (n || '').toString().trim().toUpperCase().replace(/\s+/g, ' ')
+  .replace(/Ą/g,'A').replace(/Ć/g,'C').replace(/Ę/g,'E').replace(/Ł/g,'L').replace(/Ń/g,'N').replace(/Ó/g,'O').replace(/Ś/g,'S').replace(/Ź/g,'Z').replace(/Ż/g,'Z');
+
+// ── Giełda zamian (helpery) ──
+const dfmtSw = (ds) => { const d = new Date(ds); const dni = ['nd','pn','wt','śr','cz','pt','sb']; return `${dni[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`; };
+const opisZmiany = (s) => `${dfmtSw(s.date)} · ${s.station} · ${s.start}–${s.end} (${s.hours}h)`;
+const swapKey = (s) => s.date + '|' + s.station + '|' + s.start + '|' + s.end;
+const statusZamiany = (s) => {
+  if (s.status === 'approved') return { txt: `Zatwierdzona — przejęła: ${s.approvedVolunteer}`, kol: '#2E9E5B', bg: '#e9f7ef' };
+  if (s.status === 'rejected') return { txt: 'Odrzucona przez ASM', kol: '#E74C3C', bg: '#fdecea' };
+  if (s.status === 'cancelled') return { txt: 'Anulowana', kol: '#94a3b8', bg: '#f1f5f9' };
+  return s.volunteers.length ? { txt: `Zgłoszeń: ${s.volunteers.length} — czeka na akceptację ASM`, kol: '#F5B000', bg: '#fff8e6' } : { txt: 'Otwarta — czeka na chętnych', kol: colors.primary.medium, bg: colors.primary.bgLight };
+};
 
 const calcHours = (start, end) => {
   if (!start || !end) return 0;
@@ -163,7 +178,7 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
 // ===================== SIDEBAR / HEADER =====================
 
 const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) => {
-  const items = [{ id: 'home', icon: Home, label: 'Strona domowa' }, { id: 'shifts', icon: Calendar, label: 'Mój grafik' }, { id: 'hours', icon: Clock, label: 'Moje godziny' }, { id: 'about', icon: Info, label: 'O aplikacji' }];
+  const items = [{ id: 'home', icon: Home, label: 'Strona domowa' }, { id: 'shifts', icon: Calendar, label: 'Mój grafik' }, { id: 'hours', icon: Clock, label: 'Moje godziny' }, { id: 'swaps', icon: RefreshCw, label: 'Giełda zamian' }, { id: 'about', icon: Info, label: 'O aplikacji' }];
   const initials = user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   return (<>{isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
     <div className={'fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform flex flex-col ' + (isOpen ? 'translate-x-0' : '-translate-x-full')}>
@@ -337,26 +352,108 @@ const AboutPage = () => (
 
 // ===================== MAIN =====================
 
+const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, onCancel, onRefresh }) => {
+  const me = user.name;
+  const [sel, setSel] = useState('');
+  const [note, setNote] = useState('');
+  const today = getTodayString();
+  const myUpcoming = shifts.filter(s => s.date >= today).sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+  const juz = new Set(swaps.filter(s => s.status === 'open' && normalizeName(s.requester) === normalizeName(me)).map(swapKey));
+  const dostepneMoje = myUpcoming.filter(s => !juz.has(swapKey(s)));
+  const otwarteInnych = swaps.filter(s => s.status === 'open' && normalizeName(s.requester) !== normalizeName(me));
+  const mojeProsby = swaps.filter(s => normalizeName(s.requester) === normalizeName(me)).sort((a, b) => b.createdAt - a.createdAt);
+  const czyZgloszony = (s) => s.volunteers.some(v => normalizeName(v) === normalizeName(me));
+  const wyslij = () => { const s = dostepneMoje.find(x => swapKey(x) === sel); if (!s) return; onCreate(s, note); setSel(''); setNote(''); };
+  const inp = 'w-full px-3 py-2.5 rounded-xl border';
+
+  return (
+    <div className="p-4 space-y-4 pb-24">
+      <div className="flex justify-end"><button onClick={onRefresh} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg" style={{ color: colors.primary.medium }}><RefreshCw size={16} />Odśwież</button></div>
+
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <h3 className="font-semibold mb-1" style={{ color: colors.primary.darkest }}>Oddaj zmianę do zamiany</h3>
+        <p className="text-xs mb-3" style={{ color: colors.primary.light }}>Wybierz swoją nadchodzącą zmianę — trafi na giełdę, a ASM zatwierdzi finalną zamianę.</p>
+        {dostepneMoje.length === 0 ? <p className="text-sm text-slate-400">Brak nadchodzących zmian do wystawienia.</p> : (
+          <div className="space-y-2">
+            <select value={sel} onChange={e => setSel(e.target.value)} className={inp} style={{ borderColor: colors.primary.bg }}>
+              <option value="">— wybierz zmianę —</option>
+              {dostepneMoje.map(s => <option key={swapKey(s)} value={swapKey(s)}>{opisZmiany(s)}</option>)}
+            </select>
+            <input value={note} onChange={e => setNote(e.target.value)} placeholder="Powód (opcjonalnie)" className={inp} style={{ borderColor: colors.primary.bg }} />
+            <button onClick={wyslij} className="w-full text-white font-semibold py-2.5 rounded-xl" style={{ backgroundColor: colors.primary.medium }}>Wyślij prośbę o zamianę</button>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <h3 className="font-semibold mb-3" style={{ color: colors.primary.darkest }}>Giełda — zmiany innych ({otwarteInnych.length})</h3>
+        {otwarteInnych.length === 0 ? <p className="text-sm text-slate-400">Brak otwartych zamian.</p> : (
+          <div className="space-y-2">
+            {otwarteInnych.map(s => (
+              <div key={s.id} className="rounded-xl p-3 flex items-center justify-between gap-2" style={{ backgroundColor: colors.primary.bgLight }}>
+                <div><p className="text-sm font-medium" style={{ color: colors.primary.darkest }}>{s.requester}</p><p className="text-xs" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>{s.note && <p className="text-xs italic text-slate-400">„{s.note}"</p>}</div>
+                {czyZgloszony(s)
+                  ? <button onClick={() => onUnvolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium shrink-0" style={{ backgroundColor: '#fff8e6', color: '#F5B000' }}>Zgłoszony ✓</button>
+                  : <button onClick={() => onVolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium text-white shrink-0" style={{ backgroundColor: colors.primary.medium }}>Zgłoś się</button>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <h3 className="font-semibold mb-3" style={{ color: colors.primary.darkest }}>Moje prośby ({mojeProsby.length})</h3>
+        {mojeProsby.length === 0 ? <p className="text-sm text-slate-400">Nie masz jeszcze próśb o zamianę.</p> : (
+          <div className="space-y-2">
+            {mojeProsby.map(s => { const st = statusZamiany(s); return (
+              <div key={s.id} className="rounded-xl p-3" style={{ backgroundColor: st.bg }}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>
+                  {s.status === 'open' && <button onClick={() => onCancel(s.id)} className="text-xs px-2 py-1 rounded-lg shrink-0" style={{ backgroundColor: 'white', color: '#E74C3C' }}>Anuluj</button>}
+                </div>
+                <p className="text-xs mt-1 font-medium" style={{ color: st.kol }}>{st.txt}</p>
+                {s.status === 'open' && s.volunteers.length > 0 && <p className="text-xs mt-0.5 text-slate-500">Zgłoszeni: {s.volunteers.join(', ')}</p>}
+              </div>
+            ); })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 function REXCloudApp() {
   const [currentUser, setCurrentUser] = useState(() => loadFromStorage('rex_user', null));
+  const [swaps, setSwaps] = useState([]);
   const [sidebar, setSidebar] = useState(false);
   const [page, setPage] = useState('home');
   const [date, setDate] = useState(() => new Date());
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const reloadShifts = () => currentUser && api(`/schedule?name=${encodeURIComponent(currentUser.name)}`).then(r => { if (r.success) setShifts(r.shifts || []); }).catch(() => {});
+  const reloadSwaps = () => api('/swaps').then(r => { if (r.success) setSwaps(r.swaps || []); }).catch(() => {});
+
   useEffect(() => {
     if (currentUser) {
       setLoading(true);
-      api(`/schedule?name=${encodeURIComponent(currentUser.name)}`).then(r => {
-        if (r.success) setShifts(r.shifts || []);
-        setLoading(false);
-      }).catch(() => setLoading(false));
+      Promise.all([
+        api(`/schedule?name=${encodeURIComponent(currentUser.name)}`).then(r => { if (r.success) setShifts(r.shifts || []); }),
+        api('/swaps').then(r => { if (r.success) setSwaps(r.swaps || []); }),
+      ]).catch(() => {}).finally(() => setLoading(false));
     }
   }, [currentUser]);
 
+  // odśwież po wejściu w zakładkę Zamiany (żeby widać było zatwierdzenia ASM)
+  useEffect(() => { if (currentUser && page === 'swaps') { reloadShifts(); reloadSwaps(); } }, [page]);
+
+  const createSwap = async (shift, note) => { const r = await apiSend('/swaps', 'POST', { requester: currentUser.name, shift, note }); if (r.success) reloadSwaps(); else alert(r.error || 'Nie udało się wysłać prośby'); };
+  const volunteerSwap = async (id) => { const r = await apiSend('/swaps', 'PUT', { id, action: 'volunteer', name: currentUser.name }); if (r.success) reloadSwaps(); else alert(r.error || 'Błąd'); };
+  const unvolunteerSwap = async (id) => { const r = await apiSend('/swaps', 'PUT', { id, action: 'unvolunteer', name: currentUser.name }); if (r.success) reloadSwaps(); };
+  const cancelSwap = async (id) => { const r = await apiSend('/swaps', 'PUT', { id, action: 'cancel' }); if (r.success) reloadSwaps(); };
+
   const handleLogin = (u) => setCurrentUser(u);
-  const handleLogout = () => { localStorage.removeItem('rex_user'); setCurrentUser(null); setPage('home'); setShifts([]); };
+  const handleLogout = () => { localStorage.removeItem('rex_user'); setCurrentUser(null); setPage('home'); setShifts([]); setSwaps([]); };
 
   const todayStr = getTodayString();
   const nextShift = shifts.filter(s => s.date >= todayStr).sort((a, b) => new Date(a.date) - new Date(b.date) || a.start.localeCompare(b.start))[0] || null;
@@ -364,7 +461,7 @@ function REXCloudApp() {
   const monthShifts = shifts.filter(s => { const d = new Date(s.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
   const monthHours = monthShifts.reduce((a, s) => a + (s.hours != null ? s.hours : calcHours(s.start, s.end)), 0);
 
-  const titles = { home: 'Strona domowa', shifts: 'Mój grafik', hours: 'Moje godziny', about: 'O aplikacji' };
+  const titles = { home: 'Strona domowa', shifts: 'Mój grafik', hours: 'Moje godziny', swaps: 'Giełda zamian', about: 'O aplikacji' };
 
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
@@ -376,10 +473,11 @@ function REXCloudApp() {
         {page === 'home' && <HomePage nextShift={nextShift} onNavigateToShifts={() => setPage('shifts')} monthHours={monthHours} monthShiftCount={monthShifts.length} />}
         {page === 'shifts' && <ShiftsPage date={date} onDateChange={setDate} shifts={shifts} />}
         {page === 'hours' && <HoursPage shifts={shifts} />}
+        {page === 'swaps' && <SwapsPage user={currentUser} shifts={shifts} swaps={swaps} onCreate={createSwap} onVolunteer={volunteerSwap} onUnvolunteer={unvolunteerSwap} onCancel={cancelSwap} onRefresh={() => { reloadShifts(); reloadSwaps(); }} />}
         {page === 'about' && <AboutPage />}
       </>)}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 flex justify-around z-10">
-        {[['home', Home, 'Home'], ['shifts', Calendar, 'Grafik'], ['hours', Clock, 'Godziny'], ['about', Info, 'Info']].map(([id, Icon, label]) => (
+        {[['home', Home, 'Home'], ['shifts', Calendar, 'Grafik'], ['hours', Clock, 'Godziny'], ['swaps', RefreshCw, 'Zamiany'], ['about', Info, 'Info']].map(([id, Icon, label]) => (
           <button key={id} onClick={() => setPage(id)} className="flex flex-col items-center p-2" style={{color: page === id ? colors.primary.medium : '#94a3b8'}}><Icon size={24} /><span className="text-xs mt-1">{label}</span></button>
         ))}
       </div>
