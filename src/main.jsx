@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw } from 'lucide-react';
+import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users } from 'lucide-react';
 
 // ===================== CONFIG =====================
 const API_BASE = 'https://rex-cloud-backend.vercel.app/api';
@@ -44,6 +44,8 @@ const paraLabel = (shift) => {
 };
 
 const monthNames = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+const monthNamesGen = ['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'];
+const dniPelne = ['niedziela','poniedziałek','wtorek','środa','czwartek','piątek','sobota'];
 const dayNames = ['PON','WT','ŚR','CZW','PT','SOB','NIEDZ'];
 const dayShort = ['NIEDZ','PON','WT','ŚR','CZW','PT','SOB'];
 
@@ -193,11 +195,50 @@ const Header = ({ title, onMenuClick }) => (<div className="text-white px-4 py-4
 
 // ===================== SHIFT CARD =====================
 
-const ShiftCard = ({ shift, isToday }) => {
+// Wykrywanie podwójnego kliknięcia/tapnięcia (niezawodne na telefonie i desktopie)
+const DblTapRow = ({ children, onDouble }) => {
+  const last = React.useRef(0);
+  const handle = () => { const now = Date.now(); if (now - last.current < 350) { last.current = 0; onDouble(); } else { last.current = now; } };
+  return <div onClick={handle} className="mb-3 cursor-pointer select-none">{children}</div>;
+};
+
+// Okienko „Współpracownicy ze zmiany"
+const CoworkersModal = ({ date, list, loading, onClose }) => {
+  const d = new Date(date);
+  const dateLabel = `${dniPelne[d.getDay()]}, ${d.getDate()} ${monthNamesGen[d.getMonth()]} ${d.getFullYear()}`;
+  const inicjaly = (n) => n.split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase();
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-t-3xl max-h-[80vh] flex flex-col">
+        <div className="p-5 border-b"><h2 className="text-xl font-bold" style={{ color: colors.primary.darkest }}>Współpracownicy ze zmiany</h2><p className="text-sm text-slate-500 mt-1 capitalize">{dateLabel}</p></div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-1">
+          {loading ? (<div className="flex items-center justify-center py-10"><Cloud size={36} style={{ color: colors.primary.medium }} className="animate-pulse" /></div>)
+            : list.length === 0 ? (<p className="text-slate-400 text-center py-8">Nikt więcej nie pracuje tego dnia.</p>)
+            : list.map((s, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 rounded-xl">
+                <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold shrink-0" style={{ backgroundColor: stationColor(s.station) }}>{inicjaly(s.name)}</div>
+                <div className="flex-1 min-w-0"><p className="font-semibold truncate" style={{ color: colors.primary.darkest }}>{s.name}</p><p className="text-sm text-slate-500">{s.start} - {s.end}</p></div>
+                <span className="text-xs px-2 py-1 rounded font-medium shrink-0" style={{ backgroundColor: colors.primary.bg, color: stationColor(s.station) }}>{nazwaStanowiska(s)}</span>
+              </div>
+            ))}
+        </div>
+        <div className="p-4 border-t"><button onClick={onClose} className="w-full text-white font-semibold py-3 rounded-xl" style={{ backgroundColor: colors.primary.medium }}>Ok</button></div>
+      </div>
+    </div>
+  );
+};
+
+const ShiftCard = ({ shift, isToday, onTeam }) => {
   const d = new Date(shift.date);
   const h = shift.hours != null ? shift.hours : calcHours(shift.start, shift.end);
   return (
-    <div className="rounded-xl shadow-sm mb-3 p-4" style={{ backgroundColor: isToday ? colors.primary.bg : 'white', borderLeft: '4px solid ' + stationColor(shift.station) }}>
+    <div className="relative rounded-xl shadow-sm p-4" style={{ backgroundColor: isToday ? colors.primary.bg : 'white', borderLeft: '4px solid ' + stationColor(shift.station) }}>
+      {onTeam && (
+        <button onClick={(e) => { e.stopPropagation(); onTeam(); }} className="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.primary.bg }} title="Współpracownicy ze zmiany">
+          <Users size={18} style={{ color: colors.primary.medium }} />
+        </button>
+      )}
       <div className="flex gap-4">
         <div className="rounded-xl px-3 py-2 text-center min-w-16" style={{backgroundColor: isToday ? colors.primary.bgLight : colors.primary.bg}}>
           <p className="text-xs" style={{color: colors.primary.light}}>{dayShort[d.getDay()]}</p>
@@ -270,7 +311,7 @@ const HomePage = ({ nextShift, onNavigateToShifts, monthHours, monthShiftCount }
   );
 };
 
-const ShiftsPage = ({ date, onDateChange, shifts }) => {
+const ShiftsPage = ({ date, onDateChange, shifts, onOpenTeam }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const todayStr = getTodayString();
   const filtered = shifts.filter(s => { const d = new Date(s.date); return (!selectedDay || d.getDate() === selectedDay) && d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear(); }).sort((a, b) => new Date(a.date) - new Date(b.date) || a.start.localeCompare(b.start));
@@ -278,14 +319,15 @@ const ShiftsPage = ({ date, onDateChange, shifts }) => {
     <div className="flex flex-col min-h-screen bg-slate-50 pb-20">
       <CalendarView date={date} onDateChange={onDateChange} shifts={shifts} onDayClick={setSelectedDay} selectedDay={selectedDay} />
       <div className="flex-1 p-4">
-        {filtered.length === 0 ? (<div className="text-center py-12"><Cloud size={48} className="text-slate-300 mx-auto mb-4" /><p className="text-slate-500">Brak zmian w tym okresie</p></div>) : (
-          filtered.map((shift, i) => (
+        {filtered.length === 0 ? (<div className="text-center py-12"><Cloud size={48} className="text-slate-300 mx-auto mb-4" /><p className="text-slate-500">Brak zmian w tym okresie</p></div>) : (<>
+          <p className="text-xs text-slate-400 mb-3 flex items-center gap-1"><Users size={13} />Kliknij dwukrotnie dzień (lub ikonę) — zobaczysz zespół</p>
+          {filtered.map((shift, i) => (
             <div key={i}>
               {shift.date === todayStr && (<div className="flex items-center gap-2 mb-2 px-2"><div className="h-px flex-1" style={{backgroundColor: colors.primary.medium}}></div><span className="text-xs font-semibold px-2 py-1 rounded-full" style={{backgroundColor: colors.primary.bg, color: colors.primary.dark}}>DZIŚ</span><div className="h-px flex-1" style={{backgroundColor: colors.primary.medium}}></div></div>)}
-              <ShiftCard shift={shift} isToday={shift.date === todayStr} />
+              <DblTapRow onDouble={() => onOpenTeam(shift.date)}><ShiftCard shift={shift} isToday={shift.date === todayStr} onTeam={() => onOpenTeam(shift.date)} /></DblTapRow>
             </div>
-          ))
-        )}
+          ))}
+        </>)}
       </div>
     </div>
   );
@@ -430,6 +472,20 @@ function REXCloudApp() {
   const [date, setDate] = useState(() => new Date());
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [teamDate, setTeamDate] = useState(null);
+  const [coworkers, setCoworkers] = useState([]);
+  const [coLoading, setCoLoading] = useState(false);
+
+  const openTeam = async (dateStr) => {
+    setTeamDate(dateStr); setCoworkers([]); setCoLoading(true);
+    try {
+      const r = await api('/schedule?month=' + dateStr.slice(0, 7));
+      const all = (r.success && r.shifts) ? r.shifts : [];
+      const list = all.filter(s => s.date === dateStr && normalizeName(s.name) !== normalizeName(currentUser.name)).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+      setCoworkers(list);
+    } catch { setCoworkers([]); }
+    setCoLoading(false);
+  };
 
   const reloadShifts = () => currentUser && api(`/schedule?name=${encodeURIComponent(currentUser.name)}`).then(r => { if (r.success) setShifts(r.shifts || []); }).catch(() => {});
   const reloadSwaps = () => api('/swaps').then(r => { if (r.success) setSwaps(r.swaps || []); }).catch(() => {});
@@ -471,7 +527,7 @@ function REXCloudApp() {
       <Header title={titles[page] || 'REX Cloud'} onMenuClick={() => setSidebar(true)} />
       {loading ? (<div className="flex items-center justify-center py-20"><Cloud size={48} style={{color: colors.primary.medium}} className="animate-pulse" /></div>) : (<>
         {page === 'home' && <HomePage nextShift={nextShift} onNavigateToShifts={() => setPage('shifts')} monthHours={monthHours} monthShiftCount={monthShifts.length} />}
-        {page === 'shifts' && <ShiftsPage date={date} onDateChange={setDate} shifts={shifts} />}
+        {page === 'shifts' && <ShiftsPage date={date} onDateChange={setDate} shifts={shifts} onOpenTeam={openTeam} />}
         {page === 'hours' && <HoursPage shifts={shifts} />}
         {page === 'swaps' && <SwapsPage user={currentUser} shifts={shifts} swaps={swaps} onCreate={createSwap} onVolunteer={volunteerSwap} onUnvolunteer={unvolunteerSwap} onCancel={cancelSwap} onRefresh={() => { reloadShifts(); reloadSwaps(); }} />}
         {page === 'about' && <AboutPage />}
@@ -481,6 +537,7 @@ function REXCloudApp() {
           <button key={id} onClick={() => setPage(id)} className="flex flex-col items-center p-2" style={{color: page === id ? colors.primary.medium : '#94a3b8'}}><Icon size={24} /><span className="text-xs mt-1">{label}</span></button>
         ))}
       </div>
+      {teamDate && <CoworkersModal date={teamDate} list={coworkers} loading={coLoading} onClose={() => setTeamDate(null)} />}
     </div>
   );
 }
