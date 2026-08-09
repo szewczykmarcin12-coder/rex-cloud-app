@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users } from 'lucide-react';
+import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock } from 'lucide-react';
 
 // ===================== CONFIG =====================
 const API_BASE = 'https://rex-cloud-backend.vercel.app/api';
@@ -82,37 +82,38 @@ const calcHours = (start, end) => {
 // ===================== LOGIN =====================
 
 const LoginScreen = ({ onLogin }) => {
-  const [name, setName] = useState('');
-  const [roster, setRoster] = useState([]);
+  const [login, setLogin] = useState('');
+  const [haslo, setHaslo] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
+  const [step, setStep] = useState('login'); // 'login' | 'newpass'
+  const [acc, setAcc] = useState(null);
+  const [startowe, setStartowe] = useState('');
+  const [np1, setNp1] = useState('');
+  const [np2, setNp2] = useState('');
 
-  useEffect(() => {
-    api('/schedule?roster=1').then(r => { if (r.success) setRoster(r.roster || []); }).catch(() => {});
-  }, []);
+  const toUser = (a) => ({ name: a.grafikName || a.name, display: a.name, login: a.login });
 
-  const onNameChange = (v) => {
-    setName(v);
-    if (v.length >= 1) {
-      const norm = v.trim().toUpperCase();
-      setSuggestions(roster.filter(n => n.toUpperCase().includes(norm)).slice(0, 6));
-    } else setSuggestions([]);
-  };
-
-  const handleLogin = async (loginName) => {
-    const useName = (loginName || name).trim();
-    if (!useName) { setError('Wpisz swoje imię lub nazwisko'); return; }
+  const submit = async () => {
+    if (!login.trim() || !haslo) { setError('Podaj login i hasło'); return; }
     setLoading(true); setError('');
     try {
-      const r = await api(`/schedule?name=${encodeURIComponent(useName)}`);
-      if (r.success && r.found) {
-        const user = { name: r.displayName || useName };
-        saveToStorage('rex_user', user);
-        onLogin(user);
-      } else {
-        setError('Nie znaleziono pracownika o tym nazwisku w grafiku');
-      }
+      const r = await apiSend('/accounts?action=auth', 'POST', { login: login.trim(), haslo });
+      if (r.success) {
+        if (r.account.mustChange) { setAcc(r.account); setStartowe(haslo); setStep('newpass'); }
+        else { const u = toUser(r.account); saveToStorage('rex_user', u); onLogin(u); }
+      } else setError(r.error || 'Nieprawidłowy login lub hasło');
+    } catch { setError('Błąd połączenia z serwerem'); }
+    setLoading(false);
+  };
+  const savePass = async () => {
+    if (!/^\d{4}$/.test(np1)) { setError('PIN musi mieć 4 cyfry'); return; }
+    if (np1 !== np2) { setError('PIN-y nie są takie same'); return; }
+    setLoading(true); setError('');
+    try {
+      const r = await apiSend('/accounts?action=setpass', 'POST', { login: acc.login, oldHaslo: startowe, newPass: np1 });
+      if (r.success) { const u = toUser(acc); saveToStorage('rex_user', u); onLogin(u); }
+      else setError(r.error || 'Nie udało się ustawić hasła');
     } catch { setError('Błąd połączenia z serwerem'); }
     setLoading(false);
   };
@@ -125,24 +126,26 @@ const LoginScreen = ({ onLogin }) => {
           <div><span className="text-white text-3xl font-light">REX</span><span className="text-3xl font-light ml-2" style={{color: colors.primary.bg}}>Cloud</span></div>
         </div>
         <div className="bg-white rounded-2xl p-8">
-          <div className="flex items-center justify-center gap-2 mb-2"><Search size={20} style={{color: colors.primary.medium}} /><h2 className="text-2xl font-semibold">Zaloguj się</h2></div>
-          <p className="text-center text-sm text-slate-500 mb-6">Wpisz swoje imię, aby zobaczyć swój grafik</p>
-          {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
-          <div className="space-y-4">
-            <div className="relative">
-              <label className="block text-sm text-slate-600 mb-1">Imię / Nazwisko</label>
-              <input type="text" value={name} onChange={(e) => onNameChange(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full px-4 py-3 rounded-xl border focus:outline-none" placeholder="np. KOWALSKI" disabled={loading} autoFocus />
-              {suggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-lg border overflow-hidden">
-                  {suggestions.map(s => (
-                    <button key={s} onClick={() => { setName(s); setSuggestions([]); handleLogin(s); }} className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-sm font-medium" style={{color: colors.primary.dark}}>{s}</button>
-                  ))}
-                </div>
-              )}
+          {step === 'login' ? (<>
+            <div className="flex items-center justify-center gap-2 mb-2"><Lock size={20} style={{color: colors.primary.medium}} /><h2 className="text-2xl font-semibold">Zaloguj się</h2></div>
+            <p className="text-center text-sm text-slate-500 mb-6">Podaj login i PIN otrzymany od menedżera</p>
+            {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+            <div className="space-y-3">
+              <div><label className="block text-sm text-slate-600 mb-1">Login</label><input value={login} onChange={(e) => setLogin(e.target.value)} className="w-full px-4 py-3 rounded-xl border font-mono focus:outline-none" placeholder="np. ANNPIE001" disabled={loading} autoFocus /></div>
+              <div><label className="block text-sm text-slate-600 mb-1">PIN (4 cyfry)</label><input type="password" inputMode="numeric" maxLength={4} value={haslo} onChange={(e) => setHaslo(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && submit()} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center focus:outline-none" placeholder="••••" disabled={loading} /></div>
+              <button onClick={submit} disabled={loading} className="w-full text-white font-semibold py-3 rounded-xl" style={{backgroundColor: loading ? colors.primary.light : colors.primary.medium}}>{loading ? 'Sprawdzam...' : 'Zaloguj'}</button>
             </div>
-            <button onClick={() => handleLogin()} disabled={loading} className="w-full text-white font-semibold py-3 rounded-xl transition-colors" style={{backgroundColor: loading ? colors.primary.light : colors.primary.medium}}>{loading ? 'Sprawdzam...' : 'Pokaż mój grafik'}</button>
-          </div>
-          <p className="text-xs text-slate-400 text-center mt-4">Grafik ustala kierownik zmiany</p>
+            <p className="text-xs text-slate-400 text-center mt-4">Konto zakłada kierownik / ASM</p>
+          </>) : (<>
+            <div className="flex items-center justify-center gap-2 mb-2"><Lock size={20} style={{color: colors.primary.medium}} /><h2 className="text-2xl font-semibold">Ustaw nowy PIN</h2></div>
+            <p className="text-center text-sm text-slate-500 mb-6">Pierwsze logowanie — zmień PIN startowy na własny (4 cyfry).</p>
+            {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+            <div className="space-y-3">
+              <div><label className="block text-sm text-slate-600 mb-1">Nowy PIN (4 cyfry)</label><input type="password" inputMode="numeric" maxLength={4} value={np1} onChange={(e) => setNp1(e.target.value.replace(/\D/g, ''))} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center" placeholder="••••" disabled={loading} autoFocus /></div>
+              <div><label className="block text-sm text-slate-600 mb-1">Powtórz PIN</label><input type="password" inputMode="numeric" maxLength={4} value={np2} onChange={(e) => setNp2(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && savePass()} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center" placeholder="••••" disabled={loading} /></div>
+              <button onClick={savePass} disabled={loading} className="w-full text-white font-semibold py-3 rounded-xl" style={{backgroundColor: loading ? colors.primary.light : colors.primary.medium}}>{loading ? 'Zapisuję...' : 'Zapisz i wejdź'}</button>
+            </div>
+          </>)}
         </div>
       </div>
     </div>
@@ -181,11 +184,11 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
 
 const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) => {
   const items = [{ id: 'home', icon: Home, label: 'Strona domowa' }, { id: 'shifts', icon: Calendar, label: 'Mój grafik' }, { id: 'hours', icon: Clock, label: 'Moje godziny' }, { id: 'swaps', icon: RefreshCw, label: 'Giełda zamian' }, { id: 'about', icon: Info, label: 'O aplikacji' }];
-  const initials = user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const initials = (user.display || user.name).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   return (<>{isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
     <div className={'fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform flex flex-col ' + (isOpen ? 'translate-x-0' : '-translate-x-full')}>
       <div className="p-4 pt-8" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><div className="flex items-center gap-2 mb-4"><Cloud size={24} className="text-white" /><span className="text-white text-lg font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span></span></div></div>
-      <div className="p-4 border-b flex items-center gap-3"><div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: colors.primary.medium}}>{initials}</div><div><p className="font-semibold text-sm">{user.name}</p><p className="text-slate-500 text-xs">Pracownik</p></div></div>
+      <div className="p-4 border-b flex items-center gap-3"><div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: colors.primary.medium}}>{initials}</div><div><p className="font-semibold text-sm">{user.display || user.name}</p><p className="text-slate-500 text-xs">Pracownik</p></div></div>
       <nav className="p-4 flex-1">{items.map(item => (<button key={item.id} onClick={() => { onNavigate(item.id); onClose(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl" style={currentPage === item.id ? {backgroundColor: colors.primary.bg, color: colors.primary.dark} : {color: '#475569'}}><item.icon size={20} /><span className="font-medium">{item.label}</span></button>))}</nav>
       <div className="p-4 border-t"><button onClick={() => { onLogout(); onClose(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-600"><LogOut size={20} /><span className="font-medium">Wyloguj się</span></button></div>
     </div></>);
