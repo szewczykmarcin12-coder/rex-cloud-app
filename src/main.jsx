@@ -101,7 +101,7 @@ const LoginScreen = ({ onLogin }) => {
   const [np1, setNp1] = useState('');
   const [np2, setNp2] = useState('');
 
-  const toUser = (a) => ({ name: a.grafikName || a.name, display: a.name, login: a.login });
+  const toUser = (a) => ({ id: a.id, name: a.grafikName || a.name, display: a.name, login: a.login });
 
   const submit = async () => {
     if (!login.trim() || !haslo) { setError('Podaj login i hasło'); return; }
@@ -503,20 +503,21 @@ function REXCloudApp() {
     try {
       const r = await api('/schedule?month=' + dateStr.slice(0, 7));
       const all = (r.success && r.shifts) ? r.shifts : [];
-      const list = all.filter(s => s.date === dateStr && normalizeName(s.name) !== normalizeName(currentUser.name)).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+      const list = all.filter(s => s.date === dateStr && (currentUser.id && s.accountId ? s.accountId !== currentUser.id : normalizeName(s.name) !== normalizeName(currentUser.name))).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
       setCoworkers(list);
     } catch { setCoworkers([]); }
     setCoLoading(false);
   };
 
-  const reloadShifts = () => currentUser && api(`/schedule?name=${encodeURIComponent(currentUser.name)}`).then(r => { if (r.success) setShifts(r.shifts || []); }).catch(() => {});
+  const zapytanieOsoby = (u) => u && u.id ? `/schedule?accountId=${encodeURIComponent(u.id)}` : `/schedule?name=${encodeURIComponent(u.name)}`;
+  const reloadShifts = () => currentUser && api(zapytanieOsoby(currentUser)).then(r => { if (r.success) setShifts(r.shifts || []); }).catch(() => {});
   const reloadSwaps = () => api('/swaps').then(r => { if (r.success) setSwaps(r.swaps || []); }).catch(() => {});
 
   useEffect(() => {
     if (currentUser) {
       setLoading(true);
       Promise.all([
-        api(`/schedule?name=${encodeURIComponent(currentUser.name)}`).then(r => { if (r.success) setShifts(r.shifts || []); }),
+        api(zapytanieOsoby(currentUser)).then(r => { if (r.success) setShifts(r.shifts || []); }),
         api('/swaps').then(r => { if (r.success) setSwaps(r.swaps || []); }),
       ]).catch(() => {}).finally(() => setLoading(false));
     }
