@@ -32,10 +32,35 @@ const rolaSzk = (s) => {
 // Etykieta pozycji — stare dane 'training'/'instruktor' pokazują "Szkolenie"
 const nazwaStanowiska = (s) => {
   const u = (s.station || '').toLowerCase();
-  if (u === 'training' || u === 'instruktor') return 'Szkolenie';
-  return s.station;
+  if (u === 'training') return 'Szkolenie';
+  if (u === 'instruktor') return s.szkoli && s.station && u !== 'instruktor' ? s.station : 'Szkolenie (instruktor)';
+  return s.szkoli ? `${s.station} · szkoli` : s.station;
 };
+
+// ── Scalanie zmian szkoleniowych ──
+// Instruktor ma w grafiku DWA wiersze na te same godziny: stację roboczą (np. KONTROLER)
+// i równoległy wiersz "instruktor". W aplikacji pokazujemy to jako JEDNĄ zmianę
+// z dopiskiem o szkoleniu — dzięki temu nic się nie nakłada, a godziny liczą się raz.
+const minOf = (t) => { const [h, m] = String(t || '0:0').split(':').map(Number); return h * 60 + (m || 0); };
+const nachodza = (a, b) => {
+  let a1 = minOf(a.start), a2 = minOf(a.end); if (a2 <= a1) a2 += 1440;
+  let b1 = minOf(b.start), b2 = minOf(b.end); if (b2 <= b1) b2 += 1440;
+  return a1 < b2 && b1 < a2;
+};
+const scalZmiany = (arr) => {
+  const zwykle = [], instr = [];
+  (arr || []).forEach((s) => (rolaSzk(s) === 'instruktor' ? instr : zwykle).push(s));
+  const out = zwykle.map((s) => ({ ...s }));
+  instr.forEach((i) => {
+    const para = out.find((s) => s.date === i.date && nachodza(s, i));
+    if (para) { para.szkoli = true; para.partnerSzk = i.partner || i.uczen || null; }   // dopisek na istniejącej zmianie
+    else out.push({ ...i, szkoli: true, station: i.station });  // instruktor bez pary — pokaż raz
+  });
+  return out;
+};
+
 const paraLabel = (shift) => {
+  if (shift.szkoli) return { rola: 'Szkolisz tego dnia', osoba: shift.partnerSzk || '' };
   const r = rolaSzk(shift);
   if (!r) return null;
   return r === 'instruktor'
@@ -510,14 +535,14 @@ function REXCloudApp() {
   };
 
   const zapytanieOsoby = (u) => u && u.id ? `/schedule?accountId=${encodeURIComponent(u.id)}` : `/schedule?name=${encodeURIComponent(u.name)}`;
-  const reloadShifts = () => currentUser && api(zapytanieOsoby(currentUser)).then(r => { if (r.success) setShifts(r.shifts || []); }).catch(() => {});
+  const reloadShifts = () => currentUser && api(zapytanieOsoby(currentUser)).then(r => { if (r.success) setShifts(scalZmiany(r.shifts)); }).catch(() => {});
   const reloadSwaps = () => api('/swaps').then(r => { if (r.success) setSwaps(r.swaps || []); }).catch(() => {});
 
   useEffect(() => {
     if (currentUser) {
       setLoading(true);
       Promise.all([
-        api(zapytanieOsoby(currentUser)).then(r => { if (r.success) setShifts(r.shifts || []); }),
+        api(zapytanieOsoby(currentUser)).then(r => { if (r.success) setShifts(scalZmiany(r.shifts)); }),
         api('/swaps').then(r => { if (r.success) setSwaps(r.swaps || []); }),
       ]).catch(() => {}).finally(() => setLoading(false));
     }
