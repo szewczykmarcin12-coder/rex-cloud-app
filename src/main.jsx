@@ -9,16 +9,16 @@ const API_BASE = 'https://rex-cloud-backend.vercel.app/api';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 
 const colors = {
-  primary: { darkest: '#082567', dark: '#213b76', medium: '#395185', light: '#526695', bg: '#e8edf5', bgLight: '#f1f4f9' },
+  primary: { darkest: '#16302B', dark: '#264A43', medium: '#59807c', light: '#7FA39B', bg: '#DCE7E3', bgLight: '#F0F5F3' },
   accent: { dark: '#FDA785', medium: '#FFBF99', light: '#FBCEB1', bg: '#FFF5EE' }
 };
 
 // Station color palette (matches Excel matrix sections)
 const stationColors = {
   'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#E74C3C', 'KANAPKI / WRAPY': '#00A3E0',
-  'KONTROLER': '#1E3A8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#FF7043',
+  'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#FF7043',
   'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#FBC02D', 'ZMYWAK': '#64748B',
-  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#082567', 'MGR FUNKCYJNE': '#455A64',
+  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#16302B', 'MGR FUNKCYJNE': '#455A64',
   'SZKOLENIA': '#26A69A', 'TRAINING': '#26A69A', 'INSTRUKTOR': '#00796B'
 };
 const stationColor = (s) => stationColors[(s || '').toUpperCase()] || colors.primary.medium;
@@ -161,11 +161,11 @@ const LoginScreen = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #051845, '+colors.primary.darkest+')'}}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #0E211E, '+colors.primary.darkest+')'}}>
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-12">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{backgroundColor: colors.primary.medium}}><Cloud size={32} className="text-white" /></div>
-          <div><span className="text-white text-3xl font-light">REX</span><span className="text-3xl font-light ml-2" style={{color: colors.primary.bg}}>Cloud</span></div>
+          <div><span className="text-white text-3xl font-light">REX</span><span className="text-3xl font-light ml-2" style={{color: colors.primary.bg}}>Cloud</span><span className="block text-[11px] font-bold tracking-[0.35em] mt-1" style={{color: colors.primary.light}}>EMPLOYEE</span></div>
         </div>
         <div className="bg-white rounded-2xl p-8">
           {step === 'login' ? (<>
@@ -231,7 +231,7 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) =
   const initials = (user.display || user.name).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   return (<>{isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
     <div className={'fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform flex flex-col ' + (isOpen ? 'translate-x-0' : '-translate-x-full')}>
-      <div className="p-4 pt-8" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><div className="flex items-center gap-2 mb-4"><Cloud size={24} className="text-white" /><span className="text-white text-lg font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span></span></div></div>
+      <div className="p-4 pt-8" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><div className="flex items-center gap-2 mb-4"><Cloud size={24} className="text-white" /><span className="text-white text-lg font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span> <span className="text-[10px] font-bold tracking-widest align-middle" style={{color: colors.primary.light}}>EMPLOYEE</span></span></div></div>
       <div className="p-4 border-b flex items-center gap-3"><div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: colors.primary.medium}}>{initials}</div><div><p className="font-semibold text-sm">{user.display || user.name}</p><p className="text-slate-500 text-xs">Pracownik</p></div></div>
       <nav className="p-4 flex-1">{items.map(item => (<button key={item.id} onClick={() => { onNavigate(item.id); onClose(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl" style={currentPage === item.id ? {backgroundColor: colors.primary.bg, color: colors.primary.dark} : {color: '#475569'}}><item.icon size={20} /><span className="font-medium">{item.label}</span></button>))}</nav>
       <div className="p-4 border-t"><button onClick={() => { onLogout(); onClose(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-600"><LogOut size={20} /><span className="font-medium">Wyloguj się</span></button></div>
@@ -431,10 +431,10 @@ const HoursPage = ({ shifts }) => {
 
 const AboutPage = () => (
   <div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden">
-    <div className="p-8 text-center" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span></span><p className="mt-2" style={{color: colors.primary.bg}}>v3.0</p></div>
+    <div className="p-8 text-center" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span></span><p className="mt-1 text-[11px] font-bold tracking-[0.3em]" style={{color: colors.primary.light}}>EMPLOYEE</p><p className="mt-1" style={{color: colors.primary.bg}}>v4.0 · WorkRhythm</p></div>
     <div className="p-6 space-y-4">
       <div className="rounded-xl p-4" style={{backgroundColor: colors.primary.bg}}><span className="font-semibold" style={{color: colors.primary.darkest}}>Jak to działa</span><ul className="text-sm mt-2 space-y-1" style={{color: colors.primary.dark}}><li>• Logujesz się swoim imieniem lub nazwiskiem</li><li>• Widzisz swój grafik ułożony przez kierownika</li><li>• Grafik pochodzi z matrycy Excel</li></ul></div>
-      <p className="text-slate-500 text-sm text-center">© 2025 REX Cloud by M. Szewczyk</p>
+      <p className="text-slate-500 text-sm text-center">© 2026 REX Cloud EMPLOYEE by M. Szewczyk</p>
     </div>
   </div></div>
 );
@@ -572,7 +572,7 @@ function REXCloudApp() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Sidebar isOpen={sidebar} onClose={() => setSidebar(false)} currentPage={page} onNavigate={setPage} user={currentUser} onLogout={handleLogout} />
-      <Header title={titles[page] || 'REX Cloud'} onMenuClick={() => setSidebar(true)} />
+      <Header title={titles[page] || 'REX Cloud EMPLOYEE'} onMenuClick={() => setSidebar(true)} />
       {loading ? (<div className="flex items-center justify-center py-20"><Cloud size={48} style={{color: colors.primary.medium}} className="animate-pulse" /></div>) : (<>
         {page === 'home' && <HomePage nextShift={nextShift} onNavigateToShifts={() => setPage('shifts')} monthHours={monthHours} monthShiftCount={monthShifts.length} />}
         {page === 'shifts' && <ShiftsPage date={date} onDateChange={setDate} shifts={shifts} onOpenTeam={openTeam} />}
