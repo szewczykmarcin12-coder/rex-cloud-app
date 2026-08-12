@@ -9,7 +9,7 @@ const API_BASE = 'https://rex-cloud-backend.vercel.app/api';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 
 const colors = {
-  primary: { darkest: '#16302B', dark: '#264A43', medium: '#59807c', light: '#7FA39B', bg: '#DCE7E3', bgLight: '#F0F5F3' },
+  primary: { darkest: '#12423f', dark: '#39615c', medium: '#59807c', light: '#96aaa9', bg: '#d7d7d7', bgLight: '#f1f3f3' },
   accent: { dark: '#101815', medium: '#2A3B37', light: '#59807c', bg: '#EDF1EF' }
 };
 
@@ -18,7 +18,7 @@ const stationColors = {
   'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#E74C3C', 'KANAPKI / WRAPY': '#00A3E0',
   'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#FF7043',
   'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#FBC02D', 'ZMYWAK': '#64748B',
-  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#16302B', 'MGR FUNKCYJNE': '#455A64',
+  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#12423f', 'MGR FUNKCYJNE': '#455A64',
   'SZKOLENIA': '#26A69A', 'TRAINING': '#26A69A', 'INSTRUKTOR': '#00796B'
 };
 const stationColor = (s) => stationColors[(s || '').toUpperCase()] || colors.primary.medium;
@@ -161,7 +161,7 @@ const LoginScreen = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #0E211E, '+colors.primary.darkest+')'}}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #0A2A27, '+colors.primary.darkest+')'}}>
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-12">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{backgroundColor: colors.primary.medium}}><Cloud size={32} className="text-white" /></div>
