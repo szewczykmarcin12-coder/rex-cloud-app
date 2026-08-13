@@ -9,7 +9,7 @@ const API_BASE = 'https://rex-cloud-backend.vercel.app/api';
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 
 const colors = {
-  primary: { darkest: '#12423f', dark: '#39615c', medium: '#59807c', light: '#96aaa9', bg: '#d7d7d7', bgLight: '#f1f3f3' },
+  primary: { darkest: '#12423f', dark: '#315f5b', medium: '#59807c', light: '#96aaa9', bg: '#dfe6e5', bgLight: '#f4f7f6' },
   accent: { dark: '#101815', medium: '#2A3B37', light: '#59807c', bg: '#EDF1EF' }
 };
 
@@ -161,7 +161,7 @@ const LoginScreen = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #0A2A27, '+colors.primary.darkest+')'}}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #0d3431, '+colors.primary.darkest+')'}}>
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-12">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{backgroundColor: colors.primary.medium}}><Cloud size={32} className="text-white" /></div>
