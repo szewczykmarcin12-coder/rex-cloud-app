@@ -137,6 +137,7 @@ const LoginScreen = ({ onLogin }) => {
         if (r.account.mustChange) { setAcc(r.account); setStartowe(haslo); setStep('newpass'); }
         else {
           const u = toUser(r.account);
+          try { if (window.PasswordCredential && navigator.credentials) { navigator.credentials.store(new window.PasswordCredential({ id: login.trim(), password: haslo, name: u.display })); } } catch {}
           if (zapamietaj) saveToStorage('rex_creds', { login: login.trim(), haslo, imie: u.display }); else { try { localStorage.removeItem('rex_creds'); } catch {} }
           saveToStorage('rex_user', u); onLogin(u);
         }
@@ -145,7 +146,7 @@ const LoginScreen = ({ onLogin }) => {
     setLoading(false);
   };
   const savePass = async () => {
-    if (!/^\d{4}$/.test(np1)) { setError('PIN musi mieć 4 cyfry'); return; }
+    if (!/^\d{4,8}$/.test(np1)) { setError('PIN musi mieć 4–8 cyfr'); return; }
     if (np1 !== np2) { setError('PIN-y nie są takie same'); return; }
     setLoading(true); setError('');
     try {
@@ -173,8 +174,8 @@ const LoginScreen = ({ onLogin }) => {
             <p className="text-center text-sm text-slate-500 mb-6">{zapisane ? `Zalogujesz się jako ${zapisane.imie || zapisane.login}` : 'Podaj login i PIN otrzymany od menedżera'}</p>
             {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
             <div className="space-y-3">
-              <div><label className="block text-sm text-slate-600 mb-1">Login</label><input value={login} onChange={(e) => setLogin(e.target.value)} className="w-full px-4 py-3 rounded-xl border font-mono focus:outline-none" disabled={loading} autoFocus={!zapisane} /></div>
-              <div><label className="block text-sm text-slate-600 mb-1">PIN (4 cyfry)</label><input type="password" inputMode="numeric" maxLength={4} value={haslo} onChange={(e) => setHaslo(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && submit()} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center focus:outline-none" placeholder="••••" disabled={loading} /></div>
+              <div><label className="block text-sm text-slate-600 mb-1">Login</label><input name="username" id="username" autoComplete="username" value={login} onChange={(e) => setLogin(e.target.value)} className="w-full px-4 py-3 rounded-xl border font-mono focus:outline-none" disabled={loading} autoFocus={!zapisane} /></div>
+              <div><label className="block text-sm text-slate-600 mb-1">PIN</label><input type="password" name="password" id="current-password" autoComplete="current-password" inputMode="numeric" maxLength={8} value={haslo} onChange={(e) => setHaslo(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && submit()} className="w-full px-4 py-3 rounded-xl border tracking-[0.4em] text-center focus:outline-none" placeholder="••••••" disabled={loading} /></div>
               <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={zapamietaj} onChange={(e) => setZapamietaj(e.target.checked)} />Zapamiętaj mnie na tym urządzeniu</label>
               <button onClick={submit} disabled={loading} className="w-full text-white font-semibold py-3 rounded-xl" style={{backgroundColor: loading ? colors.primary.light : colors.primary.medium}}>{loading ? 'Sprawdzam...' : 'Zaloguj'}</button>
               {zapisane && <button onClick={zapomnij} disabled={loading} className="w-full text-sm py-2 rounded-xl" style={{color: colors.primary.medium}}>To nie ja — wyczyść zapisane dane</button>}
@@ -182,11 +183,11 @@ const LoginScreen = ({ onLogin }) => {
             <p className="text-xs text-slate-400 text-center mt-4">Konto zakłada kierownik / ASM</p>
           </>) : (<>
             <div className="flex items-center justify-center gap-2 mb-2"><Lock size={20} style={{color: colors.primary.medium}} /><h2 className="text-2xl font-semibold">Ustaw nowy PIN</h2></div>
-            <p className="text-center text-sm text-slate-500 mb-6">Pierwsze logowanie — zmień PIN startowy na własny (4 cyfry).</p>
+            <p className="text-center text-sm text-slate-500 mb-6">Pierwsze logowanie — zmień PIN startowy na własny (4–8 cyfr).</p>
             {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
             <div className="space-y-3">
-              <div><label className="block text-sm text-slate-600 mb-1">Nowy PIN (4 cyfry)</label><input type="password" inputMode="numeric" maxLength={4} value={np1} onChange={(e) => setNp1(e.target.value.replace(/\D/g, ''))} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center" placeholder="••••" disabled={loading} autoFocus /></div>
-              <div><label className="block text-sm text-slate-600 mb-1">Powtórz PIN</label><input type="password" inputMode="numeric" maxLength={4} value={np2} onChange={(e) => setNp2(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && savePass()} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center" placeholder="••••" disabled={loading} /></div>
+              <div><label className="block text-sm text-slate-600 mb-1">Nowy PIN (4–8 cyfr)</label><input type="password" autoComplete="new-password" inputMode="numeric" maxLength={8} value={np1} onChange={(e) => setNp1(e.target.value.replace(/\D/g, ''))} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center" placeholder="••••" disabled={loading} autoFocus /></div>
+              <div><label className="block text-sm text-slate-600 mb-1">Powtórz PIN</label><input type="password" autoComplete="new-password" inputMode="numeric" maxLength={8} value={np2} onChange={(e) => setNp2(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && savePass()} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center" placeholder="••••" disabled={loading} /></div>
               <button onClick={savePass} disabled={loading} className="w-full text-white font-semibold py-3 rounded-xl" style={{backgroundColor: loading ? colors.primary.light : colors.primary.medium}}>{loading ? 'Zapisuję...' : 'Zapisz i wejdź'}</button>
             </div>
           </>)}
