@@ -15,11 +15,11 @@ const colors = {
 
 // Station color palette (matches Excel matrix sections)
 const stationColors = {
-  'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#E74C3C', 'KANAPKI / WRAPY': '#00A3E0',
-  'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#FF7043',
-  'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#FBC02D', 'ZMYWAK': '#64748B',
+  'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#bd4f45', 'KANAPKI / WRAPY': '#00A3E0',
+  'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#d67943',
+  'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#d67943', 'ZMYWAK': '#64748B',
   'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#12423f', 'MGR FUNKCYJNE': '#455A64',
-  'SZKOLENIA': '#26A69A', 'TRAINING': '#26A69A', 'INSTRUKTOR': '#00796B'
+  'SZKOLENIA': '#59807c', 'TRAINING': '#59807c', 'INSTRUKTOR': '#00796B'
 };
 const stationColor = (s) => stationColors[(s || '').toUpperCase()] || colors.primary.medium;
 const rolaSzk = (s) => {
@@ -89,10 +89,10 @@ const dfmtSw = (ds) => { const d = new Date(ds); const dni = ['nd','pn','wt','ś
 const opisZmiany = (s) => `${dfmtSw(s.date)} · ${s.station} · ${s.start}–${s.end} (${s.hours}h)`;
 const swapKey = (s) => s.date + '|' + s.station + '|' + s.start + '|' + s.end;
 const statusZamiany = (s) => {
-  if (s.status === 'approved') return { txt: `Zatwierdzona — przejęła: ${s.approvedVolunteer}`, kol: '#2E9E5B', bg: '#e9f7ef' };
-  if (s.status === 'rejected') return { txt: 'Odrzucona przez ASM', kol: '#E74C3C', bg: '#fdecea' };
+  if (s.status === 'approved') return { txt: `Zatwierdzona — przejęła: ${s.approvedVolunteer}`, kol: '#2E9E5B', bg: '#e8f2ef' };
+  if (s.status === 'rejected') return { txt: 'Odrzucona przez ASM', kol: '#bd4f45', bg: '#fff0ed' };
   if (s.status === 'cancelled') return { txt: 'Anulowana', kol: '#94a3b8', bg: '#f1f5f9' };
-  return s.volunteers.length ? { txt: `Zgłoszeń: ${s.volunteers.length} — czeka na akceptację ASM`, kol: '#F5B000', bg: '#fff8e6' } : { txt: 'Otwarta — czeka na chętnych', kol: colors.primary.medium, bg: colors.primary.bgLight };
+  return s.volunteers.length ? { txt: `Zgłoszeń: ${s.volunteers.length} — czeka na akceptację ASM`, kol: '#c06a35', bg: '#fff2e8' } : { txt: 'Otwarta — czeka na chętnych', kol: colors.primary.medium, bg: colors.primary.bgLight };
 };
 
 const calcHours = (start, end) => {
@@ -483,7 +483,7 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
               <div key={s.id} className="rounded-xl p-3 flex items-center justify-between gap-2" style={{ backgroundColor: colors.primary.bgLight }}>
                 <div><p className="text-sm font-medium" style={{ color: colors.primary.darkest }}>{s.requester}</p><p className="text-xs" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>{s.note && <p className="text-xs italic text-slate-400">„{s.note}"</p>}</div>
                 {czyZgloszony(s)
-                  ? <button onClick={() => onUnvolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium shrink-0" style={{ backgroundColor: '#fff8e6', color: '#F5B000' }}>Zgłoszony ✓</button>
+                  ? <button onClick={() => onUnvolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium shrink-0" style={{ backgroundColor: '#fff2e8', color: '#c06a35' }}>Zgłoszony ✓</button>
                   : <button onClick={() => onVolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium text-white shrink-0" style={{ backgroundColor: colors.primary.medium }}>Zgłoś się</button>}
               </div>
             ))}
@@ -499,7 +499,7 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
               <div key={s.id} className="rounded-xl p-3" style={{ backgroundColor: st.bg }}>
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-medium" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>
-                  {s.status === 'open' && <button onClick={() => onCancel(s.id)} className="text-xs px-2 py-1 rounded-lg shrink-0" style={{ backgroundColor: 'white', color: '#E74C3C' }}>Anuluj</button>}
+                  {s.status === 'open' && <button onClick={() => onCancel(s.id)} className="text-xs px-2 py-1 rounded-lg shrink-0" style={{ backgroundColor: 'white', color: '#bd4f45' }}>Anuluj</button>}
                 </div>
                 <p className="text-xs mt-1 font-medium" style={{ color: st.kol }}>{st.txt}</p>
                 {s.status === 'open' && s.volunteers.length > 0 && <p className="text-xs mt-0.5 text-slate-500">Zgłoszeni: {s.volunteers.join(', ')}</p>}
