@@ -78,8 +78,11 @@ const saveToStorage = (k, d) => { try { localStorage.setItem(k, JSON.stringify(d
 const loadFromStorage = (k, def = null) => { try { const d = localStorage.getItem(k); return d ? JSON.parse(d) : def; } catch { return def; } };
 const getTodayString = () => { const t = new Date(); return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); };
 
-const api = async (path) => { const r = await fetch(`${API_BASE}${path}`); return r.json(); };
-const apiSend = async (path, method, body) => { const r = await fetch(`${API_BASE}${path}`, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); return r.json(); };
+// SEC-01: każde wywołanie z tokenem sesji; 401 przy ważnym tokenie = wygaśnięcie → wylogowanie
+const authHeaders = () => { const t = loadFromStorage('rex_token', null); return t ? { Authorization: `Bearer ${t}` } : {}; };
+const obsluz401 = (r) => { if (r.status === 401 && loadFromStorage('rex_token', null)) { try { localStorage.removeItem('rex_token'); localStorage.removeItem('rex_user'); location.reload(); } catch {} } return r; };
+const api = async (path) => { const r = obsluz401(await fetch(`${API_BASE}${path}`, { headers: { ...authHeaders() } })); return r.json(); };
+const apiSend = async (path, method, body) => { const r = obsluz401(await fetch(`${API_BASE}${path}`, { method, headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: body ? JSON.stringify(body) : undefined })); return r.json(); };
 
 const normalizeName = (n) => (n || '').toString().trim().toUpperCase().replace(/\s+/g, ' ')
   .replace(/Ą/g,'A').replace(/Ć/g,'C').replace(/Ę/g,'E').replace(/Ł/g,'L').replace(/Ń/g,'N').replace(/Ó/g,'O').replace(/Ś/g,'S').replace(/Ź/g,'Z').replace(/Ż/g,'Z');
@@ -118,7 +121,7 @@ const LoginScreen = ({ onLogin }) => {
 
   useEffect(() => {
     const z = loadFromStorage('rex_creds', null);
-    if (z && z.login) { setZapisane(z); setLogin(z.login); setHaslo(z.haslo || ''); }
+    if (z && z.login) { setZapisane(z); setLogin(z.login); }          // SEC-03: hasła nie przechowujemy
   }, []);
 
   const zapomnij = () => { try { localStorage.removeItem('rex_creds'); } catch {} setZapisane(null); setLogin(''); setHaslo(''); };
@@ -138,7 +141,8 @@ const LoginScreen = ({ onLogin }) => {
         else {
           const u = toUser(r.account);
           try { if (window.PasswordCredential && navigator.credentials) { navigator.credentials.store(new window.PasswordCredential({ id: login.trim(), password: haslo, name: u.display })); } } catch {}
-          if (zapamietaj) saveToStorage('rex_creds', { login: login.trim(), haslo, imie: u.display }); else { try { localStorage.removeItem('rex_creds'); } catch {} }
+          if (r.token) saveToStorage('rex_token', r.token);            // sesja zamiast hasła
+          if (zapamietaj) saveToStorage('rex_creds', { login: login.trim(), imie: u.display }); else { try { localStorage.removeItem('rex_creds'); } catch {} }
           saveToStorage('rex_user', u); onLogin(u);
         }
       } else setError(r.error || 'Nieprawidłowy login lub hasło');
@@ -153,7 +157,8 @@ const LoginScreen = ({ onLogin }) => {
       const r = await apiSend('/accounts?action=setpass', 'POST', { login: acc.login, oldHaslo: startowe, newPass: np1 });
       if (r.success) {
         const u = toUser(acc);
-        if (zapamietaj) saveToStorage('rex_creds', { login: acc.login, haslo: np1, imie: u.display });
+        if (r.token) saveToStorage('rex_token', r.token);
+        if (zapamietaj) saveToStorage('rex_creds', { login: acc.login, imie: u.display });
         saveToStorage('rex_user', u); onLogin(u);
       }
       else setError(r.error || 'Nie udało się ustawić hasła');
@@ -558,7 +563,7 @@ function REXCloudApp() {
   const cancelSwap = async (id) => { const r = await apiSend('/swaps', 'PUT', { id, action: 'cancel' }); if (r.success) reloadSwaps(); };
 
   const handleLogin = (u) => setCurrentUser(u);
-  const handleLogout = () => { localStorage.removeItem('rex_user'); setCurrentUser(null); setPage('home'); setShifts([]); setSwaps([]); };
+  const handleLogout = () => { localStorage.removeItem('rex_user'); localStorage.removeItem('rex_token'); setCurrentUser(null); setPage('home'); setShifts([]); setSwaps([]); };
 
   const todayStr = getTodayString();
   const nextShift = shifts.filter(s => s.date >= todayStr).sort((a, b) => new Date(a.date) - new Date(b.date) || a.start.localeCompare(b.start))[0] || null;
