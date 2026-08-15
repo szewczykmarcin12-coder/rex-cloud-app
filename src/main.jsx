@@ -94,7 +94,7 @@ const dfmtSw = (ds) => { const d = new Date(ds); const dni = ['nd','pn','wt','ś
 const opisZmiany = (s) => `${dfmtSw(s.date)} · ${s.station} · ${s.start}–${s.end} (${s.hours}h)`;
 const swapKey = (s) => s.date + '|' + s.station + '|' + s.start + '|' + s.end;
 const statusZamiany = (s) => {
-  if (s.status === 'approved') return { txt: `Zatwierdzona — przejęła: ${s.approvedVolunteer}`, kol: '#2E9E5B', bg: '#e8f2ef' };
+  if (s.status === 'approved') return { txt: `Zatwierdzona — przejmuje: ${s.approvedVolunteerDisplay || s.approvedVolunteer}`, kol: '#2E9E5B', bg: '#e8f2ef' };
   if (s.status === 'rejected') return { txt: 'Odrzucona przez ASM', kol: '#bd4f45', bg: '#fff0ed' };
   if (s.status === 'cancelled') return { txt: 'Anulowana', kol: '#94a3b8', bg: '#f1f5f9' };
   return s.volunteers.length ? { txt: `Zgłoszeń: ${s.volunteers.length} — czeka na akceptację ASM`, kol: '#c06a35', bg: '#fff2e8' } : { txt: 'Otwarta — czeka na chętnych', kol: colors.primary.medium, bg: colors.primary.bgLight };
@@ -641,10 +641,11 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
   const [note, setNote] = useState('');
   const today = getTodayString();
   const myUpcoming = shifts.filter(s => s.date >= today).sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
-  const juz = new Set(swaps.filter(s => s.status === 'open' && normalizeName(s.requester) === normalizeName(me)).map(swapKey));
+  const mojaProsba = (s) => s.requesterAccountId ? s.requesterAccountId === user.id : normalizeName(s.requester) === normalizeName(me);
+  const juz = new Set(swaps.filter(s => s.status === 'open' && mojaProsba(s)).map(swapKey));
   const dostepneMoje = myUpcoming.filter(s => !juz.has(swapKey(s)));
-  const otwarteInnych = swaps.filter(s => s.status === 'open' && normalizeName(s.requester) !== normalizeName(me));
-  const mojeProsby = swaps.filter(s => normalizeName(s.requester) === normalizeName(me)).sort((a, b) => b.createdAt - a.createdAt);
+  const otwarteInnych = swaps.filter(s => s.status === 'open' && !mojaProsba(s));
+  const mojeProsby = swaps.filter(s => mojaProsba(s)).sort((a, b) => b.createdAt - a.createdAt);
   const czyZgloszony = (s) => s.volunteers.some(v => normalizeName(v) === normalizeName(me));
   const wyslij = () => { const s = dostepneMoje.find(x => swapKey(x) === sel); if (!s) return; onCreate(s, note); setSel(''); setNote(''); };
   const inp = 'w-full px-3 py-2.5 rounded-xl border';
@@ -674,7 +675,7 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
           <div className="space-y-2">
             {otwarteInnych.map(s => (
               <div key={s.id} className="rounded-xl p-3 flex items-center justify-between gap-2" style={{ backgroundColor: colors.primary.bgLight }}>
-                <div><p className="text-sm font-medium" style={{ color: colors.primary.darkest }}>{s.requester}</p><p className="text-xs" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>{s.note && <p className="text-xs italic text-slate-400">„{s.note}"</p>}</div>
+                <div><p className="text-sm font-medium" style={{ color: colors.primary.darkest }}>{s.requesterDisplay || s.requester}</p><p className="text-xs" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>{s.note && <p className="text-xs italic text-slate-400">„{s.note}"</p>}</div>
                 {czyZgloszony(s)
                   ? <button onClick={() => onUnvolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium shrink-0" style={{ backgroundColor: '#fff2e8', color: '#c06a35' }}>Zgłoszony ✓</button>
                   : <button onClick={() => onVolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium text-white shrink-0" style={{ backgroundColor: colors.primary.medium }}>Zgłoś się</button>}
@@ -695,7 +696,7 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
                   {s.status === 'open' && <button onClick={() => onCancel(s.id)} className="text-xs px-2 py-1 rounded-lg shrink-0" style={{ backgroundColor: 'white', color: '#bd4f45' }}>Anuluj</button>}
                 </div>
                 <p className="text-xs mt-1 font-medium" style={{ color: st.kol }}>{st.txt}</p>
-                {s.status === 'open' && s.volunteers.length > 0 && <p className="text-xs mt-0.5 text-slate-500">Zgłoszeni: {s.volunteers.join(', ')}</p>}
+                {s.status === 'open' && s.volunteers.length > 0 && <p className="text-xs mt-0.5 text-slate-500">Zgłoszeni: {(s.volunteersDisplay || s.volunteers.map(v => ({ display: v }))).map(v => v.display).join(', ')}</p>}
               </div>
             ); })}
           </div>
@@ -723,7 +724,7 @@ function REXCloudApp() {
     try {
       const r = await api('/schedule?month=' + dateStr.slice(0, 7));
       const all = (r.success && r.shifts) ? r.shifts : [];
-      const list = all.filter(s => s.date === dateStr && (currentUser.id && s.accountId ? s.accountId !== currentUser.id : normalizeName(s.name) !== normalizeName(currentUser.name))).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+      const list = all.filter(s => s.date === dateStr && !(s.mine != null ? s.mine : normalizeName(s.name) === normalizeName(currentUser.name))).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
       setCoworkers(list);
     } catch { setCoworkers([]); }
     setCoLoading(false);
