@@ -438,58 +438,6 @@ const DyspoPage = () => {
   );
 };
 
-// WFM-02: dostępność tygodniowa — propozycja pracownika, akceptacja kierownika
-const DostepnoscCard = () => {
-  const DNI = [['1', 'Poniedziałek'], ['2', 'Wtorek'], ['3', 'Środa'], ['4', 'Czwartek'], ['5', 'Piątek'], ['6', 'Sobota'], ['0', 'Niedziela']];
-  const pusty = () => Object.fromEntries(DNI.map(([d]) => [d, { tryb: 'pelna', od: '06:00', do: '23:00' }]));
-  const [wzor, setWzor] = useState(pusty());
-  const [pending, setPending] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState('');
-  useEffect(() => {
-    api('/availability').then((r) => {
-      if (r.success && r.availability) {
-        const src = (r.availability.pending && r.availability.pending.wzor) || r.availability.wzor;
-        if (src) setWzor((w) => ({ ...w, ...Object.fromEntries(Object.entries(src).map(([k, v]) => [String(k), { tryb: v.tryb || 'pelna', od: v.od || '06:00', do: v.do || '23:00' }])) }));
-        setPending(!!r.availability.pending);
-      }
-    }).catch(() => {});
-  }, []);
-  const setDzien = (d, patch) => setWzor((w) => ({ ...w, [d]: { ...w[d], ...patch } }));
-  const wyslij = async () => {
-    setBusy(true); setMsg('');
-    const r = await apiSend('/availability', 'PUT', { wzor });
-    setBusy(false);
-    if (r.success) { setPending(true); setMsg('Propozycja wysłana — czeka na akceptację kierownika.'); }
-    else setMsg(r.error || 'Nie udało się zapisać');
-  };
-  return (
-    <div className="bg-white rounded-2xl shadow-sm p-4">
-      <h3 className="text-lg font-semibold mb-1">Moja dostępność</h3>
-      <p className="text-xs text-slate-500 mb-3">Zmiany zaczną obowiązywać po akceptacji kierownika. „Niedostępny" blokuje planowanie zmian w ten dzień.</p>
-      {pending && <div className="p-2.5 rounded-lg mb-3 text-sm" style={{ backgroundColor: '#fff4e0', color: '#B26A00' }}>Masz propozycję oczekującą na akceptację.</div>}
-      {msg && <div className="p-2.5 rounded-lg mb-3 text-sm" style={{ backgroundColor: '#e8f2ef', color: '#347363' }}>{msg}</div>}
-      <div className="space-y-2">
-        {DNI.map(([d, label]) => (
-          <div key={d} className="flex items-center gap-2">
-            <span className="w-24 text-sm shrink-0">{label}</span>
-            <select value={wzor[d].tryb} onChange={(e) => setDzien(d, { tryb: e.target.value })} className="px-2 py-1.5 rounded-lg border text-sm flex-1" style={{ borderColor: colors.primary.bg }}>
-              <option value="pelna">Dostępny/a</option>
-              <option value="okno">W godzinach…</option>
-              <option value="brak">Niedostępny/a</option>
-            </select>
-            {wzor[d].tryb === 'okno' && (<>
-              <input type="time" value={wzor[d].od} onChange={(e) => setDzien(d, { od: e.target.value })} className="px-1.5 py-1.5 rounded-lg border text-sm" style={{ borderColor: colors.primary.bg }} />
-              <input type="time" value={wzor[d].do} onChange={(e) => setDzien(d, { do: e.target.value })} className="px-1.5 py-1.5 rounded-lg border text-sm" style={{ borderColor: colors.primary.bg }} />
-            </>)}
-          </div>
-        ))}
-      </div>
-      <button disabled={busy} onClick={wyslij} className="w-full mt-4 py-3 rounded-xl text-white font-semibold disabled:opacity-50" style={{ backgroundColor: colors.primary.medium }}>{busy ? 'Wysyłam…' : 'Wyślij do akceptacji'}</button>
-    </div>
-  );
-};
-
 // WFM-03: wnioski o urlop / absencje — pracownik składa, kierownik decyduje w panelu
 const WnioskiPage = () => {
   const [lista, setLista] = useState(null);
@@ -528,7 +476,6 @@ const WnioskiPage = () => {
           <button disabled={busy} onClick={wyslij} className="w-full py-3 rounded-xl text-white font-semibold disabled:opacity-50" style={{ backgroundColor: colors.primary.medium }}>{busy ? 'Wysyłam…' : 'Wyślij wniosek'}</button>
         </div>
       </div>
-      <DostepnoscCard />
       <div className="bg-white rounded-2xl shadow-sm p-4">
         <h3 className="text-lg font-semibold mb-3">Moje wnioski</h3>
         {lista === null ? <p className="text-sm text-slate-400">Ładowanie…</p> : lista.length === 0 ? <p className="text-sm text-slate-400">Brak wniosków.</p> : (
