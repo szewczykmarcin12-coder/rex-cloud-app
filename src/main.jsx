@@ -351,9 +351,24 @@ const DyspoPage = () => {
   const [reqs, setReqs] = useState([]);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+  const [okno, setOkno] = useState(null);
   const pokaz = (m) => { setToast(m); setTimeout(() => setToast(''), 2600); };
   const zaladuj = () => api('/availability?reqs=1').then((r) => { if (r.success) setReqs(r.requests || []); }).catch(() => {});
-  useEffect(zaladuj, []);
+  useEffect(() => {
+    zaladuj();
+    api('/availability?window=1').then((r) => {
+      if (r.success && r.okno) {
+        setOkno(r.okno);
+        const start = `${r.okno.targetMonth}-01`;
+        setWeekStart(dyPon(start));
+        setSelectedDate(start);
+        setRepeatUntil(`${r.okno.targetMonth}-28`);
+      }
+    }).catch(() => {});
+  }, []);
+  const wOknie = (d) => !okno || d.slice(0, 7) === okno.targetMonth;
+  const mcNazwa = okno ? new Intl.DateTimeFormat('pl-PL', { month: 'long', year: 'numeric' }).format(new Date(okno.targetMonth + '-01T12:00:00')) : '';
+  const zamkniete = okno ? !okno.otwarte : false;
   const week = useMemo(() => Array.from({ length: 7 }, (_, i) => { const date = dyAdd(weekStart, i); const d = new Date(date + 'T12:00:00'); return { date, label: new Intl.DateTimeFormat('pl-PL', { weekday: 'short' }).format(d).replace('.', '').toUpperCase(), day: String(d.getDate()) }; }), [weekStart]);
   const naDate = useMemo(() => new Map(reqs.map((r) => [r.date, r])), [reqs]);
   const wyslij = async (e) => {
@@ -370,8 +385,13 @@ const DyspoPage = () => {
       <section className="mobile-intro">
         <span>WORKRHYTHM</span>
         <h1>Podaj dyspozycję</h1>
-        <p>Powiedz managerowi, kiedy możesz pracować. Dyspozycja nie zmienia automatycznie opublikowanego grafiku.</p>
+        <p>{okno ? `Dyspozycje zbieramy na ${mcNazwa}.` : 'Powiedz managerowi, kiedy możesz pracować.'} Dyspozycja nie zmienia automatycznie opublikowanego grafiku.</p>
       </section>
+      {zamkniete && (
+        <div className="mobile-week-card" style={{ borderLeft: '4px solid #bd4f45' }}>
+          <div className="mobile-deadline" style={{ color: '#9f312b' }}><Clock3 size={15} /><span><strong>Okno zamknięte.</strong> Termin składania dyspozycji na {mcNazwa} minął 20. dnia miesiąca. Otworzyć może je wyłącznie ASM.</span></div>
+        </div>
+      )}
       <section className="mobile-week-card">
         <header>
           <button aria-label="Poprzedni tydzień" onClick={() => setWeekStart(dyAdd(weekStart, -7))}><ChevronLeft size={19} /></button>
@@ -379,11 +399,11 @@ const DyspoPage = () => {
           <button aria-label="Następny tydzień" onClick={() => setWeekStart(dyAdd(weekStart, 7))}><ChevronRight size={19} /></button>
         </header>
         <div className="mobile-week-days">
-          {week.map((d) => { const saved = naDate.get(d.date); return <button key={d.date} className={`${selectedDate === d.date ? 'active' : ''} ${saved ? `has-request ${saved.status}` : ''}`} onClick={() => setSelectedDate(d.date)}>
+          {week.map((d) => { const saved = naDate.get(d.date); const poza = !wOknie(d.date); return <button key={d.date} disabled={poza} style={poza ? { opacity: .35 } : undefined} className={`${selectedDate === d.date ? 'active' : ''} ${saved ? `has-request ${saved.status}` : ''}`} onClick={() => setSelectedDate(d.date)}>
             <span>{d.label}</span><strong>{d.day}</strong>{saved ? <i /> : <em />}
           </button>; })}
         </div>
-        <div className="mobile-deadline"><Clock3 size={15} /><span><strong>Termin zgłoszeń</strong> Niedziela, 18:00</span></div>
+        <div className="mobile-deadline"><Clock3 size={15} /><span><strong>Termin zgłoszeń</strong> {okno ? `do 20.${okno.deadline.slice(5, 7)}.${okno.deadline.slice(0, 4)} (na ${mcNazwa})` : '—'}</span></div>
       </section>
       <form className="mobile-availability-form" onSubmit={wyslij}>
         <div className="mobile-section-head"><div><small>WYBRANY DZIEŃ</small><strong>{dyFmt(selectedDate)}</strong></div><CalendarCheck2 size={22} /></div>
@@ -402,7 +422,7 @@ const DyspoPage = () => {
           {recurrence === 'weekly' && <label><span>Powtarzaj do</span><input type="date" value={repeatUntil} min={selectedDate} onChange={(e) => setRepeatUntil(e.target.value)} /></label>}
         </section>
         <label className="mobile-comment"><span><MessageSquare size={16} /> Komentarz <small>(opcjonalnie)</small></span><textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Np. zajęcia na uczelni, opieka nad dzieckiem..." /><small>{note.length}/500</small></label>
-        <button className="mobile-submit" disabled={saving}><Check size={18} /> {saving ? 'Wysyłanie...' : 'Wyślij dyspozycję'}</button>
+        <button className="mobile-submit" disabled={saving || zamkniete || !wOknie(selectedDate)}><Check size={18} /> {zamkniete ? 'Okno zamknięte' : !wOknie(selectedDate) ? `Wybierz dzień z ${mcNazwa}` : saving ? 'Wysyłanie...' : 'Wyślij dyspozycję'}</button>
       </form>
       <section className="mobile-my-requests">
         <header><div><small>MOJE ZGŁOSZENIA</small><strong>Nadchodzące dyspozycje</strong></div><span>{nadchodzace.length}</span></header>
