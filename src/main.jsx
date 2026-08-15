@@ -1,3 +1,4 @@
+import './tailwind.css';
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock } from 'lucide-react';
@@ -233,7 +234,7 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
 // ===================== SIDEBAR / HEADER =====================
 
 const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) => {
-  const items = [{ id: 'home', icon: Home, label: 'Strona domowa' }, { id: 'shifts', icon: Calendar, label: 'Mój grafik' }, { id: 'hours', icon: Clock, label: 'Moje godziny' }, { id: 'swaps', icon: RefreshCw, label: 'Giełda zamian' }, { id: 'about', icon: Info, label: 'O aplikacji' }];
+  const items = [{ id: 'home', icon: Home, label: 'Strona domowa' }, { id: 'shifts', icon: Calendar, label: 'Mój grafik' }, { id: 'hours', icon: Clock, label: 'Moje godziny' }, { id: 'swaps', icon: RefreshCw, label: 'Giełda zamian' }, { id: 'wnioski', icon: Briefcase, label: 'Urlopy i wnioski' }, { id: 'about', icon: Info, label: 'O aplikacji' }];
   const initials = (user.display || user.name).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   return (<>{isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
     <div className={'fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform flex flex-col ' + (isOpen ? 'translate-x-0' : '-translate-x-full')}>
@@ -322,7 +323,120 @@ const ShiftCard = ({ shift, isToday, onTeam }) => {
 
 // ===================== PAGES =====================
 
-const HomePage = ({ nextShift, onNavigateToShifts, monthHours, monthShiftCount }) => {
+// WFM-02: dostępność tygodniowa — propozycja pracownika, akceptacja kierownika
+const DostepnoscCard = () => {
+  const DNI = [['1', 'Poniedziałek'], ['2', 'Wtorek'], ['3', 'Środa'], ['4', 'Czwartek'], ['5', 'Piątek'], ['6', 'Sobota'], ['0', 'Niedziela']];
+  const pusty = () => Object.fromEntries(DNI.map(([d]) => [d, { tryb: 'pelna', od: '06:00', do: '23:00' }]));
+  const [wzor, setWzor] = useState(pusty());
+  const [pending, setPending] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  useEffect(() => {
+    api('/availability').then((r) => {
+      if (r.success && r.availability) {
+        const src = (r.availability.pending && r.availability.pending.wzor) || r.availability.wzor;
+        if (src) setWzor((w) => ({ ...w, ...Object.fromEntries(Object.entries(src).map(([k, v]) => [String(k), { tryb: v.tryb || 'pelna', od: v.od || '06:00', do: v.do || '23:00' }])) }));
+        setPending(!!r.availability.pending);
+      }
+    }).catch(() => {});
+  }, []);
+  const setDzien = (d, patch) => setWzor((w) => ({ ...w, [d]: { ...w[d], ...patch } }));
+  const wyslij = async () => {
+    setBusy(true); setMsg('');
+    const r = await apiSend('/availability', 'PUT', { wzor });
+    setBusy(false);
+    if (r.success) { setPending(true); setMsg('Propozycja wysłana — czeka na akceptację kierownika.'); }
+    else setMsg(r.error || 'Nie udało się zapisać');
+  };
+  return (
+    <div className="bg-white rounded-2xl shadow-sm p-4">
+      <h3 className="text-lg font-semibold mb-1">Moja dostępność</h3>
+      <p className="text-xs text-slate-500 mb-3">Zmiany zaczną obowiązywać po akceptacji kierownika. „Niedostępny" blokuje planowanie zmian w ten dzień.</p>
+      {pending && <div className="p-2.5 rounded-lg mb-3 text-sm" style={{ backgroundColor: '#fff4e0', color: '#B26A00' }}>Masz propozycję oczekującą na akceptację.</div>}
+      {msg && <div className="p-2.5 rounded-lg mb-3 text-sm" style={{ backgroundColor: '#e8f2ef', color: '#347363' }}>{msg}</div>}
+      <div className="space-y-2">
+        {DNI.map(([d, label]) => (
+          <div key={d} className="flex items-center gap-2">
+            <span className="w-24 text-sm shrink-0">{label}</span>
+            <select value={wzor[d].tryb} onChange={(e) => setDzien(d, { tryb: e.target.value })} className="px-2 py-1.5 rounded-lg border text-sm flex-1" style={{ borderColor: colors.primary.bg }}>
+              <option value="pelna">Dostępny/a</option>
+              <option value="okno">W godzinach…</option>
+              <option value="brak">Niedostępny/a</option>
+            </select>
+            {wzor[d].tryb === 'okno' && (<>
+              <input type="time" value={wzor[d].od} onChange={(e) => setDzien(d, { od: e.target.value })} className="px-1.5 py-1.5 rounded-lg border text-sm" style={{ borderColor: colors.primary.bg }} />
+              <input type="time" value={wzor[d].do} onChange={(e) => setDzien(d, { do: e.target.value })} className="px-1.5 py-1.5 rounded-lg border text-sm" style={{ borderColor: colors.primary.bg }} />
+            </>)}
+          </div>
+        ))}
+      </div>
+      <button disabled={busy} onClick={wyslij} className="w-full mt-4 py-3 rounded-xl text-white font-semibold disabled:opacity-50" style={{ backgroundColor: colors.primary.medium }}>{busy ? 'Wysyłam…' : 'Wyślij do akceptacji'}</button>
+    </div>
+  );
+};
+
+// WFM-03: wnioski o urlop / absencje — pracownik składa, kierownik decyduje w panelu
+const WnioskiPage = () => {
+  const [lista, setLista] = useState(null);
+  const [typ, setTyp] = useState('urlop');
+  const [od, setOd] = useState('');
+  const [doDnia, setDoDnia] = useState('');
+  const [powod, setPowod] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const TY = { urlop: 'Urlop wypoczynkowy', uz: 'Urlop na żądanie', l4: 'Zwolnienie (L4)', inne: 'Inna absencja' };
+  const ST = { open: ['Oczekuje', '#B26A00', '#fff4e0'], approved: ['Zatwierdzony', '#347363', '#e8f2ef'], rejected: ['Odrzucony', '#bd4f45', '#fff0ed'], cancelled: ['Wycofany', '#94a3b8', '#f1f5f9'] };
+  const zaladuj = () => { api('/absences').then((r) => { if (r.success) setLista(r.absences || []); }).catch(() => {}); };
+  useEffect(zaladuj, []);
+  const wyslij = async () => {
+    if (!od || !doDnia) return setMsg(['err', 'Podaj zakres dat']);
+    setBusy(true); setMsg(null);
+    const r = await apiSend('/absences', 'POST', { type: typ, from: od, to: doDnia, reason: powod });
+    setBusy(false);
+    if (r.success) { setOd(''); setDoDnia(''); setPowod(''); zaladuj(); setMsg(['ok', 'Wniosek wysłany — czeka na decyzję kierownika.']); }
+    else setMsg(['err', r.error || 'Nie udało się wysłać wniosku']);
+  };
+  const wycofaj = async (a) => { const r = await apiSend('/absences', 'PUT', { id: a.id, action: 'cancel' }); if (r.success) zaladuj(); else alert(r.error || 'Błąd'); };
+  const inp = 'w-full px-3 py-2.5 rounded-lg border text-sm';
+  return (
+    <div className="p-4 space-y-4 pb-24">
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <h3 className="text-lg font-semibold mb-3">Nowy wniosek</h3>
+        {msg && <div className="p-2.5 rounded-lg mb-3 text-sm" style={{ backgroundColor: msg[0] === 'ok' ? '#e8f2ef' : '#fff0ed', color: msg[0] === 'ok' ? '#347363' : '#bd4f45' }}>{msg[1]}</div>}
+        <div className="space-y-3">
+          <select value={typ} onChange={(e) => setTyp(e.target.value)} className={inp} style={{ borderColor: colors.primary.bg }}>{Object.entries(TY).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+          <div className="flex gap-2">
+            <div className="flex-1"><label className="text-xs text-slate-500">Od</label><input type="date" value={od} onChange={(e) => setOd(e.target.value)} className={inp} style={{ borderColor: colors.primary.bg }} /></div>
+            <div className="flex-1"><label className="text-xs text-slate-500">Do</label><input type="date" value={doDnia} onChange={(e) => setDoDnia(e.target.value)} className={inp} style={{ borderColor: colors.primary.bg }} /></div>
+          </div>
+          <input value={powod} onChange={(e) => setPowod(e.target.value)} placeholder="Powód (opcjonalnie)" className={inp} style={{ borderColor: colors.primary.bg }} />
+          <button disabled={busy} onClick={wyslij} className="w-full py-3 rounded-xl text-white font-semibold disabled:opacity-50" style={{ backgroundColor: colors.primary.medium }}>{busy ? 'Wysyłam…' : 'Wyślij wniosek'}</button>
+        </div>
+      </div>
+      <DostepnoscCard />
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <h3 className="text-lg font-semibold mb-3">Moje wnioski</h3>
+        {lista === null ? <p className="text-sm text-slate-400">Ładowanie…</p> : lista.length === 0 ? <p className="text-sm text-slate-400">Brak wniosków.</p> : (
+          <div className="space-y-2">
+            {lista.map((a) => { const st = ST[a.status] || ST.open; return (
+              <div key={a.id} className="rounded-xl p-3" style={{ backgroundColor: colors.primary.bgLight }}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">{TY[a.type] || a.type}</p>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ color: st[1], backgroundColor: st[2] }}>{st[0]}</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">{a.from} → {a.to}{a.reason ? ` · ${a.reason}` : ''}</p>
+                {a.decidedBy && <p className="text-[11px] text-slate-400 mt-0.5">Decyzja: {a.decidedBy}</p>}
+                {a.status === 'open' && <button onClick={() => wycofaj(a)} className="text-xs mt-2 font-medium" style={{ color: '#bd4f45' }}>Wycofaj wniosek</button>}
+              </div>
+            ); })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const HomePage = ({ nextShift, onNavigateToShifts, monthHours, monthShiftCount, publikacje = [], onConfirm }) => {
   const [, force] = useState(0);
   useEffect(() => { const i = setInterval(() => force(n => n + 1), 60000); return () => clearInterval(i); }, []);
   const countdown = () => {
@@ -333,8 +447,20 @@ const HomePage = ({ nextShift, onNavigateToShifts, monthHours, monthShiftCount }
     return { days: Math.floor(diff / 86400000), hours: Math.floor((diff % 86400000) / 3600000), min: Math.floor((diff % 3600000) / 60000) };
   };
   const cd = countdown();
+  const niepotwierdzone = publikacje.filter((x) => !x.potwierdzone);
   return (
     <div className="p-4 space-y-4 pb-24">
+      {niepotwierdzone.map((pb) => (
+        <div key={pb.month} className="bg-white rounded-2xl shadow-sm p-4" style={{ borderLeft: '4px solid #d67943' }}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-sm">Nowy grafik: {pb.month} <span className="text-xs font-normal text-slate-400">(wersja {pb.wersjaPub})</span></p>
+              <p className="text-xs text-slate-500 mt-0.5">Zapoznaj się ze zmianami i potwierdź otrzymanie grafiku.</p>
+            </div>
+            <button onClick={() => onConfirm(pb.month)} className="px-3 py-2 rounded-lg text-white text-sm font-semibold shrink-0" style={{ backgroundColor: colors.primary.medium }}>Potwierdzam</button>
+          </div>
+        </div>
+      ))}
       <div className="bg-white rounded-2xl shadow-sm p-4 cursor-pointer" style={{borderLeft: '4px solid '+colors.primary.medium}} onClick={onNavigateToShifts}>
         <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Następna zmiana</h3><Calendar size={24} style={{color: colors.primary.medium}} /></div>
         {nextShift ? (
@@ -526,6 +652,7 @@ function REXCloudApp() {
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [teamDate, setTeamDate] = useState(null);
+  const [publikacje, setPublikacje] = useState([]);   // WFM-01: opublikowane miesiące + status potwierdzenia
   const [coworkers, setCoworkers] = useState([]);
   const [coLoading, setCoLoading] = useState(false);
 
@@ -541,14 +668,15 @@ function REXCloudApp() {
   };
 
   const zapytanieOsoby = (u) => u && u.id ? `/schedule?accountId=${encodeURIComponent(u.id)}` : `/schedule?name=${encodeURIComponent(u.name)}`;
-  const reloadShifts = () => currentUser && api(zapytanieOsoby(currentUser)).then(r => { if (r.success) setShifts(scalZmiany(r.shifts)); }).catch(() => {});
+  const reloadShifts = () => currentUser && api(zapytanieOsoby(currentUser)).then(r => { if (r.success) { setShifts(scalZmiany(r.shifts)); setPublikacje(r.publikacje || []); } }).catch(() => {});
+  const potwierdzGrafik = async (month) => { const r = await apiSend('/schedule?action=confirm', 'POST', { month }); if (r.success) reloadShifts(); else alert(r.error || 'Nie udało się potwierdzić'); };
   const reloadSwaps = () => api('/swaps').then(r => { if (r.success) setSwaps(r.swaps || []); }).catch(() => {});
 
   useEffect(() => {
     if (currentUser) {
       setLoading(true);
       Promise.all([
-        api(zapytanieOsoby(currentUser)).then(r => { if (r.success) setShifts(scalZmiany(r.shifts)); }),
+        api(zapytanieOsoby(currentUser)).then(r => { if (r.success) { setShifts(scalZmiany(r.shifts)); setPublikacje(r.publikacje || []); } }),
         api('/swaps').then(r => { if (r.success) setSwaps(r.swaps || []); }),
       ]).catch(() => {}).finally(() => setLoading(false));
     }
@@ -571,7 +699,7 @@ function REXCloudApp() {
   const monthShifts = shifts.filter(s => { const d = new Date(s.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
   const monthHours = monthShifts.reduce((a, s) => a + (s.hours != null ? s.hours : calcHours(s.start, s.end)), 0);
 
-  const titles = { home: 'Strona domowa', shifts: 'Mój grafik', hours: 'Moje godziny', swaps: 'Giełda zamian', about: 'O aplikacji' };
+  const titles = { home: 'Strona domowa', shifts: 'Mój grafik', hours: 'Moje godziny', swaps: 'Giełda zamian', wnioski: 'Urlopy i wnioski', about: 'O aplikacji' };
 
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
@@ -580,14 +708,15 @@ function REXCloudApp() {
       <Sidebar isOpen={sidebar} onClose={() => setSidebar(false)} currentPage={page} onNavigate={setPage} user={currentUser} onLogout={handleLogout} />
       <Header title={titles[page] || 'REX Cloud EMPLOYEE'} onMenuClick={() => setSidebar(true)} />
       {loading ? (<div className="flex items-center justify-center py-20"><Cloud size={48} style={{color: colors.primary.medium}} className="animate-pulse" /></div>) : (<>
-        {page === 'home' && <HomePage nextShift={nextShift} onNavigateToShifts={() => setPage('shifts')} monthHours={monthHours} monthShiftCount={monthShifts.length} />}
+        {page === 'home' && <HomePage nextShift={nextShift} onNavigateToShifts={() => setPage('shifts')} monthHours={monthHours} monthShiftCount={monthShifts.length} publikacje={publikacje} onConfirm={potwierdzGrafik} />}
         {page === 'shifts' && <ShiftsPage date={date} onDateChange={setDate} shifts={shifts} onOpenTeam={openTeam} />}
         {page === 'hours' && <HoursPage shifts={shifts} />}
         {page === 'swaps' && <SwapsPage user={currentUser} shifts={shifts} swaps={swaps} onCreate={createSwap} onVolunteer={volunteerSwap} onUnvolunteer={unvolunteerSwap} onCancel={cancelSwap} onRefresh={() => { reloadShifts(); reloadSwaps(); }} />}
+        {page === 'wnioski' && <WnioskiPage />}
         {page === 'about' && <AboutPage />}
       </>)}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 flex justify-around z-10">
-        {[['home', Home, 'Home'], ['shifts', Calendar, 'Grafik'], ['hours', Clock, 'Godziny'], ['swaps', RefreshCw, 'Zamiany'], ['about', Info, 'Info']].map(([id, Icon, label]) => (
+        {[['home', Home, 'Home'], ['shifts', Calendar, 'Grafik'], ['hours', Clock, 'Godziny'], ['swaps', RefreshCw, 'Zamiany'], ['wnioski', Briefcase, 'Urlopy']].map(([id, Icon, label]) => (
           <button key={id} onClick={() => setPage(id)} className="flex flex-col items-center p-2" style={{color: page === id ? colors.primary.medium : '#94a3b8'}}><Icon size={24} /><span className="text-xs mt-1">{label}</span></button>
         ))}
       </div>
