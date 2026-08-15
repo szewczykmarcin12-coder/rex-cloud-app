@@ -1,7 +1,8 @@
 import './tailwind.css';
+import './workrhythm-mobile.css';
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock } from 'lucide-react';
+import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, MessageSquare, Check } from 'lucide-react';
 
 // ===================== CONFIG =====================
 const API_BASE = 'https://rex-cloud-backend.vercel.app/api';
@@ -234,7 +235,7 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
 // ===================== SIDEBAR / HEADER =====================
 
 const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) => {
-  const items = [{ id: 'home', icon: Home, label: 'Strona domowa' }, { id: 'shifts', icon: Calendar, label: 'Mój grafik' }, { id: 'hours', icon: Clock, label: 'Moje godziny' }, { id: 'swaps', icon: RefreshCw, label: 'Giełda zamian' }, { id: 'wnioski', icon: Briefcase, label: 'Urlopy i wnioski' }, { id: 'about', icon: Info, label: 'O aplikacji' }];
+  const items = [{ id: 'home', icon: Home, label: 'Strona domowa' }, { id: 'shifts', icon: Calendar, label: 'Mój grafik' }, { id: 'dyspo', icon: CalendarCheck2, label: 'Dyspozycyjność' }, { id: 'hours', icon: Clock, label: 'Moje godziny' }, { id: 'swaps', icon: RefreshCw, label: 'Giełda zamian' }, { id: 'wnioski', icon: Briefcase, label: 'Urlopy i wnioski' }, { id: 'about', icon: Info, label: 'O aplikacji' }];
   const initials = (user.display || user.name).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   return (<>{isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
     <div className={'fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform flex flex-col ' + (isOpen ? 'translate-x-0' : '-translate-x-full')}>
@@ -322,6 +323,100 @@ const ShiftCard = ({ shift, isToday, onTeam }) => {
 };
 
 // ===================== PAGES =====================
+
+// ═════════ REX WorkRhythm Modules v1.0.0 — Dyspozycyjność (mobile) ═════════
+const DY_TYPES = [
+  { id: 'available', title: 'Mogę pracować', detail: 'Cały dzień', icon: Check },
+  { id: 'unavailable', title: 'Nie mogę pracować', detail: 'Cały dzień', icon: Ban },
+  { id: 'from_time', title: 'Od godziny', detail: 'Np. od 14:00', icon: ArrowRight },
+  { id: 'until_time', title: 'Do godziny', detail: 'Np. do 16:00', icon: Clock3 },
+  { id: 'specific_shift', title: 'Konkretna zmiana', detail: 'Podaj początek i koniec', icon: Timer },
+];
+const DY_CZASY = Array.from({ length: 96 }, (_, i) => `${String(Math.floor(i * 15 / 60)).padStart(2, '0')}:${String((i * 15) % 60).padStart(2, '0')}`);
+const dyAdd = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const dyPon = (iso) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+const dyFmt = (d) => new Intl.DateTimeFormat('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(d + 'T12:00:00'));
+const dyLabel = (r) => r.type === 'available' ? 'Mogę pracować · cały dzień' : r.type === 'unavailable' ? 'Nie mogę pracować · cały dzień' : r.type === 'from_time' ? `Mogę pracować od ${r.startTime}` : r.type === 'until_time' ? `Mogę pracować do ${r.endTime}` : `Preferowana zmiana ${r.startTime}–${r.endTime}`;
+
+const DyspoPage = () => {
+  const dzisIso = new Date().toISOString().slice(0, 10);
+  const [weekStart, setWeekStart] = useState(dyPon(dzisIso));
+  const [selectedDate, setSelectedDate] = useState(dzisIso);
+  const [typ, setTyp] = useState('available');
+  const [startTime, setStartTime] = useState('14:00');
+  const [endTime, setEndTime] = useState('22:00');
+  const [recurrence, setRecurrence] = useState('once');
+  const [repeatUntil, setRepeatUntil] = useState(dyAdd(dzisIso, 35));
+  const [note, setNote] = useState('');
+  const [reqs, setReqs] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState('');
+  const pokaz = (m) => { setToast(m); setTimeout(() => setToast(''), 2600); };
+  const zaladuj = () => api('/availability?reqs=1').then((r) => { if (r.success) setReqs(r.requests || []); }).catch(() => {});
+  useEffect(zaladuj, []);
+  const week = useMemo(() => Array.from({ length: 7 }, (_, i) => { const date = dyAdd(weekStart, i); const d = new Date(date + 'T12:00:00'); return { date, label: new Intl.DateTimeFormat('pl-PL', { weekday: 'short' }).format(d).replace('.', '').toUpperCase(), day: String(d.getDate()) }; }), [weekStart]);
+  const naDate = useMemo(() => new Map(reqs.map((r) => [r.date, r])), [reqs]);
+  const wyslij = async (e) => {
+    e.preventDefault(); setSaving(true);
+    const r = await apiSend('/availability?action=request', 'POST', { date: selectedDate, type: typ, startTime, endTime, recurrence, repeatUntil: recurrence === 'weekly' ? repeatUntil : null, note });
+    setSaving(false);
+    if (r.success) { setNote(''); zaladuj(); pokaz('Dyspozycja wysłana do managera'); }
+    else pokaz(r.error || 'Nie udało się wysłać dyspozycji');
+  };
+  const tydzienTytul = `${new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short' }).format(new Date(week[0].date + 'T12:00:00'))}–${new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short' }).format(new Date(week[6].date + 'T12:00:00'))}`;
+  const nadchodzace = [...reqs].filter((r) => r.date >= dzisIso || r.recurrence === 'weekly').sort((a, b) => a.date.localeCompare(b.date));
+  return (
+    <div className="p-4 pb-24" style={{ maxWidth: 480, margin: '0 auto' }}>
+      <section className="mobile-intro">
+        <span>WORKRHYTHM</span>
+        <h1>Podaj dyspozycję</h1>
+        <p>Powiedz managerowi, kiedy możesz pracować. Dyspozycja nie zmienia automatycznie opublikowanego grafiku.</p>
+      </section>
+      <section className="mobile-week-card">
+        <header>
+          <button aria-label="Poprzedni tydzień" onClick={() => setWeekStart(dyAdd(weekStart, -7))}><ChevronLeft size={19} /></button>
+          <div><small>WYBRANY TYDZIEŃ</small><strong>{tydzienTytul}</strong></div>
+          <button aria-label="Następny tydzień" onClick={() => setWeekStart(dyAdd(weekStart, 7))}><ChevronRight size={19} /></button>
+        </header>
+        <div className="mobile-week-days">
+          {week.map((d) => { const saved = naDate.get(d.date); return <button key={d.date} className={`${selectedDate === d.date ? 'active' : ''} ${saved ? `has-request ${saved.status}` : ''}`} onClick={() => setSelectedDate(d.date)}>
+            <span>{d.label}</span><strong>{d.day}</strong>{saved ? <i /> : <em />}
+          </button>; })}
+        </div>
+        <div className="mobile-deadline"><Clock3 size={15} /><span><strong>Termin zgłoszeń</strong> Niedziela, 18:00</span></div>
+      </section>
+      <form className="mobile-availability-form" onSubmit={wyslij}>
+        <div className="mobile-section-head"><div><small>WYBRANY DZIEŃ</small><strong>{dyFmt(selectedDate)}</strong></div><CalendarCheck2 size={22} /></div>
+        <fieldset className="mobile-type-grid">
+          <legend>Wybierz swoją dyspozycję</legend>
+          {DY_TYPES.map((o) => <button type="button" key={o.id} className={`${typ === o.id ? 'active' : ''} ${o.id === 'specific_shift' ? 'wide' : ''}`} onClick={() => setTyp(o.id)}>
+            <span><o.icon size={19} /></span><div><strong>{o.title}</strong><small>{o.detail}</small></div>{typ === o.id && <i><Check size={12} /></i>}
+          </button>)}
+        </fieldset>
+        {(typ === 'from_time' || typ === 'until_time' || typ === 'specific_shift') && <div className="mobile-time-fields">
+          {(typ === 'from_time' || typ === 'specific_shift') && <label><span>{typ === 'specific_shift' ? 'Początek' : 'Mogę od'}</span><select value={startTime} onChange={(e) => setStartTime(e.target.value)}>{DY_CZASY.map((t) => <option key={t}>{t}</option>)}</select></label>}
+          {(typ === 'until_time' || typ === 'specific_shift') && <label><span>{typ === 'specific_shift' ? 'Koniec' : 'Mogę do'}</span><select value={endTime} onChange={(e) => setEndTime(e.target.value)}>{DY_CZASY.map((t) => <option key={t}>{t}</option>)}</select></label>}
+        </div>}
+        <section className="mobile-repeat-card">
+          <div><Repeat2 size={18} /><span><strong>Powtarzaj co tydzień</strong><small>Ta sama dyspozycja w kolejne tygodnie</small></span><button type="button" className={recurrence === 'weekly' ? 'on' : ''} aria-label="Powtarzaj co tydzień" onClick={() => setRecurrence((v) => v === 'once' ? 'weekly' : 'once')}><i /></button></div>
+          {recurrence === 'weekly' && <label><span>Powtarzaj do</span><input type="date" value={repeatUntil} min={selectedDate} onChange={(e) => setRepeatUntil(e.target.value)} /></label>}
+        </section>
+        <label className="mobile-comment"><span><MessageSquare size={16} /> Komentarz <small>(opcjonalnie)</small></span><textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Np. zajęcia na uczelni, opieka nad dzieckiem..." /><small>{note.length}/500</small></label>
+        <button className="mobile-submit" disabled={saving}><Check size={18} /> {saving ? 'Wysyłanie...' : 'Wyślij dyspozycję'}</button>
+      </form>
+      <section className="mobile-my-requests">
+        <header><div><small>MOJE ZGŁOSZENIA</small><strong>Nadchodzące dyspozycje</strong></div><span>{nadchodzace.length}</span></header>
+        {nadchodzace.slice(0, 4).map((r) => <article key={r.id}>
+          <div className={`mobile-request-icon ${r.type}`}><CalendarCheck2 size={18} /></div>
+          <div><strong>{dyFmt(r.date)}</strong><span>{dyLabel(r)}</span>{r.recurrence === 'weekly' && <small><Repeat2 size={11} /> co tydzień do {r.repeatUntil}</small>}{r.managerNote && <small><MessageSquare size={11} /> {r.managerNote}</small>}</div>
+          <b className={r.status}>{r.status === 'pending' ? 'Oczekuje' : r.status === 'approved' ? 'Zaakceptowana' : 'Odrzucona'}</b>
+        </article>)}
+        {!nadchodzace.length && <article><div className="mobile-request-icon available"><CalendarCheck2 size={18} /></div><div><strong>Brak zgłoszeń</strong><span>Wyślij pierwszą dyspozycję powyżej.</span></div></article>}
+      </section>
+      {toast && <div className="rex-mobile-toast"><Check size={16} /> {toast}</div>}
+    </div>
+  );
+};
 
 // WFM-02: dostępność tygodniowa — propozycja pracownika, akceptacja kierownika
 const DostepnoscCard = () => {
@@ -699,7 +794,7 @@ function REXCloudApp() {
   const monthShifts = shifts.filter(s => { const d = new Date(s.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
   const monthHours = monthShifts.reduce((a, s) => a + (s.hours != null ? s.hours : calcHours(s.start, s.end)), 0);
 
-  const titles = { home: 'Strona domowa', shifts: 'Mój grafik', hours: 'Moje godziny', swaps: 'Giełda zamian', wnioski: 'Urlopy i wnioski', about: 'O aplikacji' };
+  const titles = { home: 'Strona domowa', shifts: 'Mój grafik', dyspo: 'Dyspozycyjność', hours: 'Moje godziny', swaps: 'Giełda zamian', wnioski: 'Urlopy i wnioski', about: 'O aplikacji' };
 
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
@@ -712,11 +807,12 @@ function REXCloudApp() {
         {page === 'shifts' && <ShiftsPage date={date} onDateChange={setDate} shifts={shifts} onOpenTeam={openTeam} />}
         {page === 'hours' && <HoursPage shifts={shifts} />}
         {page === 'swaps' && <SwapsPage user={currentUser} shifts={shifts} swaps={swaps} onCreate={createSwap} onVolunteer={volunteerSwap} onUnvolunteer={unvolunteerSwap} onCancel={cancelSwap} onRefresh={() => { reloadShifts(); reloadSwaps(); }} />}
+        {page === 'dyspo' && <DyspoPage />}
         {page === 'wnioski' && <WnioskiPage />}
         {page === 'about' && <AboutPage />}
       </>)}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 flex justify-around z-10">
-        {[['home', Home, 'Home'], ['shifts', Calendar, 'Grafik'], ['hours', Clock, 'Godziny'], ['swaps', RefreshCw, 'Zamiany'], ['wnioski', Briefcase, 'Urlopy']].map(([id, Icon, label]) => (
+        {[['home', Home, 'Home'], ['shifts', Calendar, 'Grafik'], ['dyspo', CalendarCheck2, 'Dyspoz.'], ['swaps', RefreshCw, 'Zamiany'], ['wnioski', Briefcase, 'Urlopy']].map(([id, Icon, label]) => (
           <button key={id} onClick={() => setPage(id)} className="flex flex-col items-center p-2" style={{color: page === id ? colors.primary.medium : '#94a3b8'}}><Icon size={24} /><span className="text-xs mt-1">{label}</span></button>
         ))}
       </div>
