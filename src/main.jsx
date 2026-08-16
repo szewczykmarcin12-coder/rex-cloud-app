@@ -54,7 +54,8 @@ const scalZmiany = (arr) => {
   (arr || []).forEach((s) => (rolaSzk(s) === 'instruktor' ? instr : zwykle).push(s));
   const out = zwykle.map((s) => ({ ...s }));
   instr.forEach((i) => {
-    const para = out.find((s) => s.date === i.date && nachodza(s, i));
+    // FIX: para tylko w obrębie TEJ SAMEJ osoby (jak w panelu)
+    const para = out.find((s) => s.date === i.date && String(s.name).toUpperCase().trim() === String(i.name).toUpperCase().trim() && nachodza(s, i));
     if (para) { para.szkoli = true; para.partnerSzk = i.partner || i.uczen || null; }   // dopisek na istniejącej zmianie
     else out.push({ ...i, szkoli: true, station: i.station });  // instruktor bez pary — pokaż raz
   });
