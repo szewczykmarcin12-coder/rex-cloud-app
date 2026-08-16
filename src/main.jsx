@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom/client';
 import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, MessageSquare, Check } from 'lucide-react';
 
 // ===================== CONFIG =====================
-const API_BASE = 'https://rex-cloud-backend.vercel.app/api';
+const API_BASE = String(import.meta.env.VITE_API_BASE || 'https://rex-cloud-backend.vercel.app/api').replace(/\/$/, '');
 // ^ Zmień na URL swojego backendu po wdrożeniu
 
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
