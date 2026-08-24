@@ -3,7 +3,7 @@ import './workrhythm-mobile.css';
 import './ordo-hub.css';
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, MessageSquare, Check, LogIn, Coffee, History, Bell, MapPin as MapPinIcon, ChevronDown } from 'lucide-react';
+import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, MessageSquare, Check, LogIn, Coffee, History, Bell, MapPin as MapPinIcon, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 // ===================== CONFIG =====================
 const API_BASE = String(import.meta.env.VITE_API_BASE || 'https://rex-cloud-backend.vercel.app/api').replace(/\/$/, '');
@@ -117,27 +117,23 @@ const LoginScreen = ({ onLogin }) => {
   const [login, setLogin] = useState('');
   const [haslo, setHaslo] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState('login'); // 'login' | 'newpass'
+  const [step, setStep] = useState('login');            // 'login' | 'newpass'
   const [acc, setAcc] = useState(null);
   const [zapamietaj, setZapamietaj] = useState(true);
-  const [zapisane, setZapisane] = useState(null);   // { login, haslo, imie }
-
-  useEffect(() => {
-    const z = loadFromStorage('rex_creds', null);
-    if (z && z.login) { setZapisane(z); setLogin(z.login); }          // SEC-03: hasła nie przechowujemy
-  }, []);
-
-  const zapomnij = () => { try { localStorage.removeItem('rex_creds'); } catch {} setZapisane(null); setLogin(''); setHaslo(''); };
+  const [pokazHaslo, setPokazHaslo] = useState(false);
   const [startowe, setStartowe] = useState('');
   const [np1, setNp1] = useState('');
   const [np2, setNp2] = useState('');
 
+  useEffect(() => { const z = loadFromStorage('rex_creds', null); if (z && z.login) setLogin(z.login); }, []);
   const toUser = (a) => ({ id: a.id, name: a.grafikName || a.name, display: a.name, login: a.login });
 
-  const submit = async () => {
-    if (!login.trim() || !haslo) { setError('Podaj login i hasło'); return; }
-    setLoading(true); setError('');
+  const submit = async (e) => {
+    if (e) e.preventDefault();
+    if (!login.trim() || !haslo) { setError('Podaj identyfikator i hasło'); return; }
+    setLoading(true); setError(''); setInfo('');
     try {
       const r = await apiSend('/accounts?action=auth', 'POST', { login: login.trim(), haslo });
       if (r.success) {
@@ -145,15 +141,16 @@ const LoginScreen = ({ onLogin }) => {
         else {
           const u = toUser(r.account);
           try { if (window.PasswordCredential && navigator.credentials) { navigator.credentials.store(new window.PasswordCredential({ id: login.trim(), password: haslo, name: u.display })); } } catch {}
-          if (r.token) saveToStorage('rex_token', r.token);            // sesja zamiast hasła
+          if (r.token) saveToStorage('rex_token', r.token);
           if (zapamietaj) saveToStorage('rex_creds', { login: login.trim(), imie: u.display }); else { try { localStorage.removeItem('rex_creds'); } catch {} }
           saveToStorage('rex_user', u); onLogin(u);
         }
-      } else setError(r.error || 'Nieprawidłowy login lub hasło');
+      } else setError(r.error || 'Nieprawidłowy identyfikator lub hasło');
     } catch { setError('Błąd połączenia z serwerem'); }
     setLoading(false);
   };
-  const savePass = async () => {
+  const savePass = async (e) => {
+    if (e) e.preventDefault();
     if (!/^\d{4,8}$/.test(np1)) { setError('PIN musi mieć 4–8 cyfr'); return; }
     if (np1 !== np2) { setError('PIN-y nie są takie same'); return; }
     setLoading(true); setError('');
@@ -164,49 +161,67 @@ const LoginScreen = ({ onLogin }) => {
         if (r.token) saveToStorage('rex_token', r.token);
         if (zapamietaj) saveToStorage('rex_creds', { login: acc.login, imie: u.display });
         saveToStorage('rex_user', u); onLogin(u);
-      }
-      else setError(r.error || 'Nie udało się ustawić hasła');
+      } else setError(r.error || 'Nie udało się ustawić hasła');
     } catch { setError('Błąd połączenia z serwerem'); }
+    setLoading(false);
+  };
+  const resetHasla = async () => {
+    if (!login.trim()) { setError('Wpisz najpierw swój identyfikator'); return; }
+    setLoading(true); setError(''); setInfo('');
+    try { const r = await apiSend('/admin-auth', 'POST', { action: 'reset-request', login: login.trim() }); setInfo(r.message || 'Zgłoszenie wysłane — manager przekaże Ci tymczasowe hasło.'); }
+    catch { setError('Błąd połączenia z serwerem'); }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #26030f, '+colors.primary.darkest+')'}}>
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-3 mb-12">
-          <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{backgroundColor: colors.primary.medium}}><Cloud size={32} className="text-white" /></div>
-          <div><span className="text-white text-3xl font-bold tracking-[0.22em]">ORDO</span><span className="block text-[11px] font-bold tracking-[0.35em] mt-1" style={{color: colors.primary.light}}>EMPLOYEE HUB</span></div>
+    <div className="eh-login">
+      <div className="eh-login-shell">
+        <div className="eh-login-hero">
+          <div className="eh-login-logo"><b>ORDO</b><span>EMPLOYEE HUB</span></div>
+          <small>TWÓJ DZIEŃ PRACY</small>
+          <h2>Wszystko, czego potrzebujesz — zawsze pod ręką.</h2>
         </div>
-        <div className="bg-white rounded-2xl p-8">
-          {step === 'login' ? (<>
-            <div className="flex items-center justify-center gap-2 mb-2"><Lock size={20} style={{color: colors.primary.medium}} /><h2 className="text-2xl font-semibold">Zaloguj się</h2></div>
-            <p className="text-center text-sm text-slate-500 mb-6">{zapisane ? `Zalogujesz się jako ${zapisane.imie || zapisane.login}` : 'Podaj login i PIN otrzymany od menedżera'}</p>
-            {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
-            <div className="space-y-3">
-              <div><label className="block text-sm text-slate-600 mb-1">Login</label><input name="username" id="username" autoComplete="username" value={login} onChange={(e) => setLogin(e.target.value)} className="w-full px-4 py-3 rounded-xl border font-mono focus:outline-none" disabled={loading} autoFocus={!zapisane} /></div>
-              <div><label className="block text-sm text-slate-600 mb-1">PIN</label><input type="password" name="password" id="current-password" autoComplete="current-password" inputMode="numeric" maxLength={8} value={haslo} onChange={(e) => setHaslo(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && submit()} className="w-full px-4 py-3 rounded-xl border tracking-[0.4em] text-center focus:outline-none" placeholder="••••••" disabled={loading} /></div>
-              <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={zapamietaj} onChange={(e) => setZapamietaj(e.target.checked)} />Zapamiętaj mnie na tym urządzeniu</label>
-              <button onClick={submit} disabled={loading} className="w-full text-white font-semibold py-3 rounded-xl" style={{backgroundColor: loading ? colors.primary.light : colors.primary.medium}}>{loading ? 'Sprawdzam...' : 'Zaloguj'}</button>
-              {zapisane && <button onClick={zapomnij} disabled={loading} className="w-full text-sm py-2 rounded-xl" style={{color: colors.primary.medium}}>To nie ja — wyczyść zapisane dane</button>}
+        {step === 'login' ? (
+          <form className="eh-login-card" onSubmit={submit}>
+            <small>WITAJ PONOWNIE</small>
+            <h1>Zaloguj się</h1>
+            <p>Użyj identyfikatora pracownika lub firmowego adresu e-mail.</p>
+            {error && <div className="eh-login-info err">{error}</div>}
+            {info && <div className="eh-login-info ok">{info}</div>}
+            <label className="eh-login-field"><span>Identyfikator lub e-mail</span>
+              <div className="eh-login-input"><Users size={17} /><input name="username" autoComplete="username" value={login} onChange={(e) => setLogin(e.target.value)} disabled={loading} autoFocus /></div>
+            </label>
+            <label className="eh-login-field"><span>Hasło</span>
+              <div className="eh-login-input"><Lock size={17} /><input type={pokazHaslo ? 'text' : 'password'} name="password" autoComplete="current-password" placeholder="Wpisz hasło" value={haslo} onChange={(e) => setHaslo(e.target.value)} disabled={loading} /><button type="button" aria-label="Pokaż hasło" onClick={() => setPokazHaslo((v) => !v)}>{pokazHaslo ? <EyeOff size={17} /> : <Eye size={17} />}</button></div>
+            </label>
+            <div className="eh-login-row">
+              <label className="eh-login-remember"><input type="checkbox" checked={zapamietaj} onChange={(e) => setZapamietaj(e.target.checked)} /> Pozostań zalogowany</label>
+              <button type="button" className="eh-login-forgot" onClick={resetHasla}>Nie pamiętam hasła</button>
             </div>
-            <p className="text-xs text-slate-400 text-center mt-4">Konto zakłada kierownik / ASM</p>
-          </>) : (<>
-            <div className="flex items-center justify-center gap-2 mb-2"><Lock size={20} style={{color: colors.primary.medium}} /><h2 className="text-2xl font-semibold">Ustaw nowy PIN</h2></div>
-            <p className="text-center text-sm text-slate-500 mb-6">Pierwsze logowanie — zmień PIN startowy na własny (4–8 cyfr).</p>
-            {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
-            <div className="space-y-3">
-              <div><label className="block text-sm text-slate-600 mb-1">Nowy PIN (4–8 cyfr)</label><input type="password" autoComplete="new-password" inputMode="numeric" maxLength={8} value={np1} onChange={(e) => setNp1(e.target.value.replace(/\D/g, ''))} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center" placeholder="••••" disabled={loading} autoFocus /></div>
-              <div><label className="block text-sm text-slate-600 mb-1">Powtórz PIN</label><input type="password" autoComplete="new-password" inputMode="numeric" maxLength={8} value={np2} onChange={(e) => setNp2(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && savePass()} className="w-full px-4 py-3 rounded-xl border tracking-[0.5em] text-center" placeholder="••••" disabled={loading} /></div>
-              <button onClick={savePass} disabled={loading} className="w-full text-white font-semibold py-3 rounded-xl" style={{backgroundColor: loading ? colors.primary.light : colors.primary.medium}}>{loading ? 'Zapisuję...' : 'Zapisz i wejdź'}</button>
-            </div>
-          </>)}
-        </div>
+            <button type="submit" className="eh-login-submit" disabled={loading || !login.trim()}>{loading ? 'Logowanie…' : <>Zaloguj się <ArrowRight size={17} /></>}</button>
+            <p className="eh-login-note"><Check size={13} /> ORDO nie poprosi Cię o hasło poza tym ekranem.</p>
+          </form>
+        ) : (
+          <form className="eh-login-card" onSubmit={savePass}>
+            <small>PIERWSZE LOGOWANIE</small>
+            <h1>Ustaw własny PIN</h1>
+            <p>Hasło startowe od managera działa tylko raz. Wybierz własny PIN (4–8 cyfr).</p>
+            {error && <div className="eh-login-info err">{error}</div>}
+            <label className="eh-login-field"><span>Nowy PIN</span>
+              <div className="eh-login-input"><Lock size={17} /><input type="password" inputMode="numeric" maxLength={8} value={np1} onChange={(e) => setNp1(e.target.value)} disabled={loading} autoFocus /></div>
+            </label>
+            <label className="eh-login-field"><span>Powtórz PIN</span>
+              <div className="eh-login-input"><Lock size={17} /><input type="password" inputMode="numeric" maxLength={8} value={np2} onChange={(e) => setNp2(e.target.value)} disabled={loading} /></div>
+            </label>
+            <button type="submit" className="eh-login-submit" disabled={loading}>{loading ? 'Zapisywanie…' : <>Zapisz i wejdź <ArrowRight size={17} /></>}</button>
+            <p className="eh-login-note"><Check size={13} /> PIN jest przechowywany wyłącznie jako bezpieczny skrót.</p>
+          </form>
+        )}
+        <div className="eh-login-foot">ORDO Employee Hub • 2026</div>
       </div>
     </div>
   );
 };
-
-// ===================== CALENDAR =====================
 
 const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) => {
   const year = date.getFullYear(), month = date.getMonth();

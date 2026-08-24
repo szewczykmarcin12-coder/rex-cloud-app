@@ -922,3 +922,37 @@ body,
   .eh-team-modal-list > div { grid-template-columns:34px 1fr }
   .eh-team-modal-list em { grid-column:2 }
 }
+
+/* ═════ ORDO Employee Hub — ekran logowania ═════ */
+.eh-login { min-height: 100vh; display: flex; flex-direction: column; align-items: center; background: #f4eef0; }
+.eh-login-shell { width: min(520px, 100%); min-height: 100vh; display: flex; flex-direction: column; background: #fff; box-shadow: 0 0 60px rgba(63,11,28,.12); }
+.eh-login-hero { padding: 34px 30px 30px; color: #fff; background: linear-gradient(160deg, #4a0b22 0%, #3f0b1c 55%, #33081a 100%); border-radius: 0 0 26px 26px; }
+.eh-login-logo { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 26px; }
+.eh-login-logo b { font-size: 34px; font-weight: 900; letter-spacing: .06em; line-height: 1; padding: 2px 10px; border: 3px solid #fff; border-radius: 10px; }
+.eh-login-logo span { font-size: 8px; font-weight: 800; letter-spacing: .34em; color: rgba(255,255,255,.85); }
+.eh-login-hero small { display: block; margin-bottom: 8px; font-size: 9.5px; font-weight: 800; letter-spacing: .22em; color: rgba(255,255,255,.55); }
+.eh-login-hero h2 { margin: 0; font-size: 24px; line-height: 1.25; letter-spacing: -.01em; font-weight: 700; }
+.eh-login-card { flex: 1; padding: 30px; }
+.eh-login-card > small { display: block; font-size: 10px; font-weight: 800; letter-spacing: .18em; color: #a7465f; }
+.eh-login-card h1 { margin: 6px 0 6px; font-size: 30px; letter-spacing: -.02em; color: #2b171e; }
+.eh-login-card > p { margin: 0 0 22px; color: #78676d; font-size: 13px; }
+.eh-login-field { display: block; margin-bottom: 16px; }
+.eh-login-field > span { display: block; margin-bottom: 7px; color: #2b171e; font-size: 12.5px; font-weight: 700; }
+.eh-login-input { display: flex; align-items: center; gap: 10px; padding: 0 14px; border: 1px solid #e4dcde; border-radius: 14px; background: #fff; transition: border-color .15s; }
+.eh-login-input:focus-within { border-color: #a7465f; box-shadow: 0 0 0 3px rgba(167,70,95,.12); }
+.eh-login-input svg { color: #a99fa3; flex-shrink: 0; }
+.eh-login-input input { flex: 1; height: 48px; border: 0; outline: 0; background: transparent; color: #2b171e; font-size: 14px; }
+.eh-login-input input::placeholder { color: #b6aaae; }
+.eh-login-input button { border: 0; background: transparent; color: #a99fa3; display: grid; place-items: center; cursor: pointer; padding: 4px; }
+.eh-login-row { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 22px; }
+.eh-login-remember { display: flex; align-items: center; gap: 8px; color: #78676d; font-size: 12.5px; cursor: pointer; }
+.eh-login-remember input { width: 17px; height: 17px; accent-color: #741334; }
+.eh-login-forgot { border: 0; background: transparent; color: #741334; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.eh-login-submit { width: 100%; height: 52px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 14px; color: #fff; background: linear-gradient(135deg, #741334, #5d102a); font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 24px rgba(93,16,42,.25); }
+.eh-login-submit:disabled { opacity: .55; cursor: default; }
+.eh-login-info { margin: 0 0 16px; padding: 11px 13px; border-radius: 12px; font-size: 12.5px; }
+.eh-login-info.err { color: #9f312b; background: #fdeeed; border: 1px solid #f3c8c4; }
+.eh-login-info.ok { color: #1d6f58; background: #e9f6f0; border: 1px solid #bfe3d4; }
+.eh-login-note { margin-top: 46px; display: flex; align-items: center; justify-content: center; gap: 7px; color: #a2969b; font-size: 11px; }
+.eh-login-note svg { color: #a7465f; }
+.eh-login-foot { padding: 18px 30px 22px; color: #b3a7ac; font-size: 10.5px; }
