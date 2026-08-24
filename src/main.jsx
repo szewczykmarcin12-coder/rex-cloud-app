@@ -12,16 +12,16 @@ const API_BASE = String(import.meta.env.VITE_API_BASE || 'https://rex-cloud-back
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 
 const colors = {
-  primary: { darkest: '#3a0718', dark: '#6f102f', medium: '#a7465f', light: '#b86d82', bg: '#ecdce1', bgLight: '#faf7f8' },
-  accent: { dark: '#101815', medium: '#2A3B37', light: '#a7465f', bg: '#EDF1EF' }
+  primary: { darkest: '#3F0B1C', dark: '#741334', medium: '#A7465F', light: '#B86D82', bg: '#F0E4E8', bgLight: '#F3EFF0' },
+  accent: { dark: '#3F0B1C', medium: '#741334', light: '#A7465F', bg: '#F0E4E8' }
 };
 
 // Station color palette (matches Excel matrix sections)
 const stationColors = {
-  'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#bd4f45', 'KANAPKI / WRAPY': '#00A3E0',
-  'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#d67943',
-  'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#d67943', 'ZMYWAK': '#64748B',
-  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#3a0718', 'MGR FUNKCYJNE': '#455A64',
+  'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#8E1B3C', 'KANAPKI / WRAPY': '#00A3E0',
+  'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#A7465F',
+  'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#A7465F', 'ZMYWAK': '#806D74',
+  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#3F0B1C', 'MGR FUNKCYJNE': '#5A3542',
   'SZKOLENIA': '#a7465f', 'TRAINING': '#a7465f', 'INSTRUKTOR': '#00796B'
 };
 const stationColor = (s) => stationColors[(s || '').toUpperCase()] || colors.primary.medium;
@@ -96,10 +96,10 @@ const dfmtSw = (ds) => { const d = new Date(ds); const dni = ['nd','pn','wt','ś
 const opisZmiany = (s) => `${dfmtSw(s.date)} · ${s.station} · ${s.start}–${s.end} (${s.hours}h)`;
 const swapKey = (s) => s.date + '|' + s.station + '|' + s.start + '|' + s.end;
 const statusZamiany = (s) => {
-  if (s.status === 'approved') return { txt: `Zatwierdzona — przejmuje: ${s.approvedVolunteerDisplay || s.approvedVolunteer}`, kol: '#2E9E5B', bg: '#e8f2ef' };
-  if (s.status === 'rejected') return { txt: 'Odrzucona przez ASM', kol: '#bd4f45', bg: '#fff0ed' };
-  if (s.status === 'cancelled') return { txt: 'Anulowana', kol: '#94a3b8', bg: '#f1f5f9' };
-  return s.volunteers.length ? { txt: `Zgłoszeń: ${s.volunteers.length} — czeka na akceptację ASM`, kol: '#c06a35', bg: '#fff2e8' } : { txt: 'Otwarta — czeka na chętnych', kol: colors.primary.medium, bg: colors.primary.bgLight };
+  if (s.status === 'approved') return { txt: `Zatwierdzona — przejmuje: ${s.approvedVolunteerDisplay || s.approvedVolunteer}`, kol: '#741334', bg: '#F0E4E8' };
+  if (s.status === 'rejected') return { txt: 'Odrzucona przez ASM', kol: '#8E1B3C', bg: '#F5E3E8' };
+  if (s.status === 'cancelled') return { txt: 'Anulowana', kol: '#A38D95', bg: '#EDE3E6' };
+  return s.volunteers.length ? { txt: `Zgłoszeń: ${s.volunteers.length} — czeka na akceptację ASM`, kol: '#A7465F', bg: '#fff2e8' } : { txt: 'Otwarta — czeka na chętnych', kol: colors.primary.medium, bg: colors.primary.bgLight };
 };
 
 const calcHours = (start, end) => {
@@ -256,14 +256,14 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) =
   const initials = (user.display || user.name).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   return (<>{isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
     <div className={'fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform flex flex-col ' + (isOpen ? 'translate-x-0' : '-translate-x-full')}>
-      <div className="p-4 pt-8" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><div className="flex items-center gap-2 mb-4"><Cloud size={24} className="text-white" /><span className="text-white text-lg font-light"><b className="tracking-[0.18em]">ORDO</b> <span className="text-[10px] font-bold tracking-widest align-middle" style={{color: colors.primary.light}}>EMPLOYEE HUB</span></span></div></div>
+      <div className="p-4 pt-8" style={{background: colors.primary.darkest}}><div className="flex items-center gap-2 mb-4"><Cloud size={24} className="text-white" /><span className="text-white text-lg font-light"><b className="tracking-[0.18em]">ORDO</b> <span className="text-[10px] font-bold tracking-widest align-middle" style={{color: colors.primary.light}}>EMPLOYEE HUB</span></span></div></div>
       <div className="p-4 border-b flex items-center gap-3"><div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: colors.primary.medium}}>{initials}</div><div><p className="font-semibold text-sm">{user.display || user.name}</p><p className="text-slate-500 text-xs">Pracownik</p></div></div>
-      <nav className="p-4 flex-1">{items.map(item => (<button key={item.id} onClick={() => { onNavigate(item.id); onClose(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl" style={currentPage === item.id ? {backgroundColor: colors.primary.bg, color: colors.primary.dark} : {color: '#475569'}}><item.icon size={20} /><span className="font-medium">{item.label}</span></button>))}</nav>
+      <nav className="p-4 flex-1">{items.map(item => (<button key={item.id} onClick={() => { onNavigate(item.id); onClose(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl" style={currentPage === item.id ? {backgroundColor: colors.primary.bg, color: colors.primary.dark} : {color: '#5A3542'}}><item.icon size={20} /><span className="font-medium">{item.label}</span></button>))}</nav>
       <div className="p-4 border-t"><button onClick={() => { onLogout(); onClose(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-600"><LogOut size={20} /><span className="font-medium">Wyloguj się</span></button></div>
     </div></>);
 };
 
-const Header = ({ title, onMenuClick }) => (<div className="text-white px-4 py-4 flex items-center justify-between sticky top-0 z-30" style={{background: 'linear-gradient(to right, '+colors.primary.dark+', '+colors.primary.darkest+')'}}><div className="flex items-center gap-3"><Cloud size={24} /><span className="text-lg font-medium">{title}</span></div><button onClick={onMenuClick} className="p-2"><Menu size={24} /></button></div>);
+const Header = ({ title, onMenuClick }) => (<div className="text-white px-4 py-4 flex items-center justify-between sticky top-0 z-30" style={{background: colors.primary.dark}}><div className="flex items-center gap-3"><Cloud size={24} /><span className="text-lg font-medium">{title}</span></div><button onClick={onMenuClick} className="p-2"><Menu size={24} /></button></div>);
 
 // ===================== SHIFT CARD =====================
 
@@ -381,7 +381,7 @@ const HubClockCard = () => {
     else alert(r.error || 'Nie udało się zapisać zdarzenia');
   };
   const st = stan ? stan.state : null;
-  const chip = st === 'working' ? ['W pracy', '#2E9E5B', '#e8f2ef'] : st === 'break' ? ['Na przerwie', '#B26A00', '#fff4e0'] : ['Poza zmianą', colors.primary.medium, colors.primary.bgLight];
+  const chip = st === 'working' ? ['W pracy', '#741334', '#F0E4E8'] : st === 'break' ? ['Na przerwie', '#A7465F', '#F0E4E8'] : ['Poza zmianą', colors.primary.medium, colors.primary.bgLight];
   const czasEv = (e) => new Date(e.at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
   const btn = (kol) => `w-full py-3.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50`;
   return (
@@ -396,10 +396,10 @@ const HubClockCard = () => {
       {st === 'working' && (
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <button disabled={busy} onClick={() => zdarzenie('break_start', 'unpaid')} className="py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: '#fff4e0', color: '#B26A00' }}><Coffee size={17} /> Przerwa niepłatna</button>
+            <button disabled={busy} onClick={() => zdarzenie('break_start', 'unpaid')} className="py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: '#F0E4E8', color: '#A7465F' }}><Coffee size={17} /> Przerwa niepłatna</button>
             <button disabled={busy} onClick={() => zdarzenie('break_start', 'paid')} className="py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: colors.primary.bgLight, color: colors.primary.dark }}><Coffee size={17} /> Przerwa płatna</button>
           </div>
-          <button disabled={busy} onClick={() => zdarzenie('clock_out')} className={btn()} style={{ backgroundColor: '#b94352' }}><LogOut size={18} /> Zakończ zmianę</button>
+          <button disabled={busy} onClick={() => zdarzenie('clock_out')} className={btn()} style={{ backgroundColor: '#8E1B3C' }}><LogOut size={18} /> Zakończ zmianę</button>
         </div>
       )}
       {st === 'break' && <button disabled={busy} onClick={() => zdarzenie('break_end')} className={btn()} style={{ backgroundColor: colors.primary.medium }}><Coffee size={18} /> Wróć z przerwy</button>}
@@ -482,8 +482,8 @@ const DyspoPage = () => {
         <p>{okno ? `Dyspozycje zbieramy na ${mcNazwa}.` : 'Powiedz managerowi, kiedy możesz pracować.'} Dyspozycja nie zmienia automatycznie opublikowanego grafiku.</p>
       </section>
       {zamkniete && (
-        <div className="mobile-week-card" style={{ borderLeft: '4px solid #bd4f45' }}>
-          <div className="mobile-deadline" style={{ color: '#9f312b' }}><Clock3 size={15} /><span><strong>Okno zamknięte.</strong> Termin składania dyspozycji na {mcNazwa} minął 20. dnia miesiąca. Otworzyć może je wyłącznie ASM.</span></div>
+        <div className="mobile-week-card" style={{ borderLeft: '4px solid #8E1B3C' }}>
+          <div className="mobile-deadline" style={{ color: '#8E1B3C' }}><Clock3 size={15} /><span><strong>Okno zamknięte.</strong> Termin składania dyspozycji na {mcNazwa} minął 20. dnia miesiąca. Otworzyć może je wyłącznie ASM.</span></div>
         </div>
       )}
       <section className="mobile-week-card">
@@ -542,7 +542,7 @@ const WnioskiPage = () => {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const TY = { urlop: 'Urlop wypoczynkowy', uz: 'Urlop na żądanie', l4: 'Zwolnienie (L4)', inne: 'Inna absencja' };
-  const ST = { open: ['Oczekuje', '#B26A00', '#fff4e0'], approved: ['Zatwierdzony', '#347363', '#e8f2ef'], rejected: ['Odrzucony', '#bd4f45', '#fff0ed'], cancelled: ['Wycofany', '#94a3b8', '#f1f5f9'] };
+  const ST = { open: ['Oczekuje', '#A7465F', '#F0E4E8'], approved: ['Zatwierdzony', '#741334', '#F0E4E8'], rejected: ['Odrzucony', '#8E1B3C', '#F5E3E8'], cancelled: ['Wycofany', '#A38D95', '#EDE3E6'] };
   const zaladuj = () => { api('/absences').then((r) => { if (r.success) setLista(r.absences || []); }).catch(() => {}); };
   useEffect(zaladuj, []);
   const wyslij = async () => {
@@ -559,7 +559,7 @@ const WnioskiPage = () => {
     <div className="p-4 space-y-4 pb-24">
       <div className="bg-white rounded-2xl shadow-sm p-4">
         <h3 className="text-lg font-semibold mb-3">Nowy wniosek</h3>
-        {msg && <div className="p-2.5 rounded-lg mb-3 text-sm" style={{ backgroundColor: msg[0] === 'ok' ? '#e8f2ef' : '#fff0ed', color: msg[0] === 'ok' ? '#347363' : '#bd4f45' }}>{msg[1]}</div>}
+        {msg && <div className="p-2.5 rounded-lg mb-3 text-sm" style={{ backgroundColor: msg[0] === 'ok' ? '#F0E4E8' : '#F5E3E8', color: msg[0] === 'ok' ? '#741334' : '#8E1B3C' }}>{msg[1]}</div>}
         <div className="space-y-3">
           <select value={typ} onChange={(e) => setTyp(e.target.value)} className={inp} style={{ borderColor: colors.primary.bg }}>{Object.entries(TY).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           <div className="flex gap-2">
@@ -582,7 +582,7 @@ const WnioskiPage = () => {
                 </div>
                 <p className="text-xs text-slate-500 mt-1">{a.from} → {a.to}{a.reason ? ` · ${a.reason}` : ''}</p>
                 {a.decidedBy && <p className="text-[11px] text-slate-400 mt-0.5">Decyzja: {a.decidedBy}</p>}
-                {a.status === 'open' && <button onClick={() => wycofaj(a)} className="text-xs mt-2 font-medium" style={{ color: '#bd4f45' }}>Wycofaj wniosek</button>}
+                {a.status === 'open' && <button onClick={() => wycofaj(a)} className="text-xs mt-2 font-medium" style={{ color: '#8E1B3C' }}>Wycofaj wniosek</button>}
               </div>
             ); })}
           </div>
@@ -608,7 +608,7 @@ const HomePage = ({ nextShift, onNavigateToShifts, monthHours, monthShiftCount, 
     <div className="p-4 space-y-4 pb-24">
       <HubClockCard />
       {niepotwierdzone.map((pb) => (
-        <div key={pb.month} className="bg-white rounded-2xl shadow-sm p-4" style={{ borderLeft: '4px solid #d67943' }}>
+        <div key={pb.month} className="bg-white rounded-2xl shadow-sm p-4" style={{ borderLeft: '4px solid #A7465F' }}>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="font-semibold text-sm">Nowy grafik: {pb.month} <span className="text-xs font-normal text-slate-400">(wersja {pb.wersjaPub})</span></p>
@@ -720,7 +720,7 @@ const HoursPage = ({ shifts }) => {
 
 const AboutPage = () => (
   <div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden">
-    <div className="p-8 text-center" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-bold tracking-[0.22em]">ORDO</span><p className="mt-1 text-[11px] font-bold tracking-[0.3em]" style={{color: colors.primary.light}}>EMPLOYEE HUB</p><p className="mt-1" style={{color: colors.primary.bg}}>ORDO Workforce Cloud</p></div>
+    <div className="p-8 text-center" style={{background: colors.primary.darkest}}><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-bold tracking-[0.22em]">ORDO</span><p className="mt-1 text-[11px] font-bold tracking-[0.3em]" style={{color: colors.primary.light}}>EMPLOYEE HUB</p><p className="mt-1" style={{color: colors.primary.bg}}>ORDO Workforce Cloud</p></div>
     <div className="p-6 space-y-4">
       <div className="rounded-xl p-4" style={{backgroundColor: colors.primary.bg}}><span className="font-semibold" style={{color: colors.primary.darkest}}>Jak to działa</span><ul className="text-sm mt-2 space-y-1" style={{color: colors.primary.dark}}><li>• Logujesz się swoim imieniem lub nazwiskiem</li><li>• Widzisz swój grafik ułożony przez kierownika</li><li>• Grafik pochodzi z matrycy Excel</li></ul></div>
       <p className="text-slate-500 text-sm text-center">© 2026 ORDO Employee Hub by M. Szewczyk</p>
@@ -772,7 +772,7 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
               <div key={s.id} className="rounded-xl p-3 flex items-center justify-between gap-2" style={{ backgroundColor: colors.primary.bgLight }}>
                 <div><p className="text-sm font-medium" style={{ color: colors.primary.darkest }}>{s.requesterDisplay || s.requester}</p><p className="text-xs" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>{s.note && <p className="text-xs italic text-slate-400">„{s.note}"</p>}</div>
                 {czyZgloszony(s)
-                  ? <button onClick={() => onUnvolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium shrink-0" style={{ backgroundColor: '#fff2e8', color: '#c06a35' }}>Zgłoszony ✓</button>
+                  ? <button onClick={() => onUnvolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium shrink-0" style={{ backgroundColor: '#fff2e8', color: '#A7465F' }}>Zgłoszony ✓</button>
                   : <button onClick={() => onVolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium text-white shrink-0" style={{ backgroundColor: colors.primary.medium }}>Zgłoś się</button>}
               </div>
             ))}
@@ -788,7 +788,7 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
               <div key={s.id} className="rounded-xl p-3" style={{ backgroundColor: st.bg }}>
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-medium" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>
-                  {s.status === 'open' && <button onClick={() => onCancel(s.id)} className="text-xs px-2 py-1 rounded-lg shrink-0" style={{ backgroundColor: 'white', color: '#bd4f45' }}>Anuluj</button>}
+                  {s.status === 'open' && <button onClick={() => onCancel(s.id)} className="text-xs px-2 py-1 rounded-lg shrink-0" style={{ backgroundColor: 'white', color: '#8E1B3C' }}>Anuluj</button>}
                 </div>
                 <p className="text-xs mt-1 font-medium" style={{ color: st.kol }}>{st.txt}</p>
                 {s.status === 'open' && s.volunteers.length > 0 && <p className="text-xs mt-0.5 text-slate-500">Zgłoszeni: {(s.volunteersDisplay || s.volunteers.map(v => ({ display: v }))).map(v => v.display).join(', ')}</p>}
