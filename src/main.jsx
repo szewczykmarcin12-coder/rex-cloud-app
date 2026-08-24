@@ -1,8 +1,9 @@
 import './tailwind.css';
 import './workrhythm-mobile.css';
+import './ordo-hub.css';
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, MessageSquare, Check } from 'lucide-react';
+import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, MessageSquare, Check, LogIn, Coffee, History, Bell, MapPin as MapPinIcon, ChevronDown } from 'lucide-react';
 
 // ===================== CONFIG =====================
 const API_BASE = String(import.meta.env.VITE_API_BASE || 'https://rex-cloud-backend.vercel.app/api').replace(/\/$/, '');
@@ -11,8 +12,8 @@ const API_BASE = String(import.meta.env.VITE_API_BASE || 'https://rex-cloud-back
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 
 const colors = {
-  primary: { darkest: '#12423f', dark: '#315f5b', medium: '#59807c', light: '#96aaa9', bg: '#dfe6e5', bgLight: '#f4f7f6' },
-  accent: { dark: '#101815', medium: '#2A3B37', light: '#59807c', bg: '#EDF1EF' }
+  primary: { darkest: '#3a0718', dark: '#6f102f', medium: '#a7465f', light: '#b86d82', bg: '#ecdce1', bgLight: '#faf7f8' },
+  accent: { dark: '#101815', medium: '#2A3B37', light: '#a7465f', bg: '#EDF1EF' }
 };
 
 // Station color palette (matches Excel matrix sections)
@@ -20,8 +21,8 @@ const stationColors = {
   'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#bd4f45', 'KANAPKI / WRAPY': '#00A3E0',
   'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#d67943',
   'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#d67943', 'ZMYWAK': '#64748B',
-  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#12423f', 'MGR FUNKCYJNE': '#455A64',
-  'SZKOLENIA': '#59807c', 'TRAINING': '#59807c', 'INSTRUKTOR': '#00796B'
+  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#3a0718', 'MGR FUNKCYJNE': '#455A64',
+  'SZKOLENIA': '#a7465f', 'TRAINING': '#a7465f', 'INSTRUKTOR': '#00796B'
 };
 const stationColor = (s) => stationColors[(s || '').toUpperCase()] || colors.primary.medium;
 const rolaSzk = (s) => {
@@ -170,11 +171,11 @@ const LoginScreen = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #0d3431, '+colors.primary.darkest+')'}}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(to bottom, #26030f, '+colors.primary.darkest+')'}}>
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-12">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{backgroundColor: colors.primary.medium}}><Cloud size={32} className="text-white" /></div>
-          <div><span className="text-white text-3xl font-light">REX</span><span className="text-3xl font-light ml-2" style={{color: colors.primary.bg}}>Cloud</span><span className="block text-[11px] font-bold tracking-[0.35em] mt-1" style={{color: colors.primary.light}}>EMPLOYEE</span></div>
+          <div><span className="text-white text-3xl font-bold tracking-[0.22em]">ORDO</span><span className="block text-[11px] font-bold tracking-[0.35em] mt-1" style={{color: colors.primary.light}}>EMPLOYEE HUB</span></div>
         </div>
         <div className="bg-white rounded-2xl p-8">
           {step === 'login' ? (<>
@@ -240,7 +241,7 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, user, onLogout }) =
   const initials = (user.display || user.name).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   return (<>{isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />}
     <div className={'fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform flex flex-col ' + (isOpen ? 'translate-x-0' : '-translate-x-full')}>
-      <div className="p-4 pt-8" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><div className="flex items-center gap-2 mb-4"><Cloud size={24} className="text-white" /><span className="text-white text-lg font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span> <span className="text-[10px] font-bold tracking-widest align-middle" style={{color: colors.primary.light}}>EMPLOYEE</span></span></div></div>
+      <div className="p-4 pt-8" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><div className="flex items-center gap-2 mb-4"><Cloud size={24} className="text-white" /><span className="text-white text-lg font-light"><b className="tracking-[0.18em]">ORDO</b> <span className="text-[10px] font-bold tracking-widest align-middle" style={{color: colors.primary.light}}>EMPLOYEE HUB</span></span></div></div>
       <div className="p-4 border-b flex items-center gap-3"><div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: colors.primary.medium}}>{initials}</div><div><p className="font-semibold text-sm">{user.display || user.name}</p><p className="text-slate-500 text-xs">Pracownik</p></div></div>
       <nav className="p-4 flex-1">{items.map(item => (<button key={item.id} onClick={() => { onNavigate(item.id); onClose(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl" style={currentPage === item.id ? {backgroundColor: colors.primary.bg, color: colors.primary.dark} : {color: '#475569'}}><item.icon size={20} /><span className="font-medium">{item.label}</span></button>))}</nav>
       <div className="p-4 border-t"><button onClick={() => { onLogout(); onClose(); }} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-600"><LogOut size={20} /><span className="font-medium">Wyloguj się</span></button></div>
@@ -324,6 +325,83 @@ const ShiftCard = ({ shift, isToday, onTeam }) => {
 };
 
 // ===================== PAGES =====================
+
+// ═════════ ORDO — Dialog wzorca (ui-dialog) ═════════
+const Dialog = ({ title, kicker, description, onClose, children, actions, size = 'medium' }) => {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (ev) => { if (ev.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [onClose]);
+  return (
+    <div className="dialog-backdrop" onMouseDown={(ev) => { if (ev.target === ev.currentTarget) onClose(); }}>
+      <section className={`app-dialog dialog-${size}`} role="dialog" aria-modal="true">
+        <header className="dialog-header">
+          <div>{kicker && <span>{kicker}</span>}<h2>{title}</h2>{description && <p>{description}</p>}</div>
+          <button onClick={onClose} aria-label="Zamknij okno"><X size={19} /></button>
+        </header>
+        <div className="dialog-body">{children}</div>
+        {actions && <footer className="dialog-actions">{actions}</footer>}
+      </section>
+    </div>
+  );
+};
+
+// ═════════ ORDO Employee Hub — rejestracja czasu (zastępuje terminal REX Clock) ═════════
+const HUB_ETYKIETY = { clock_in: 'Wejście', break_start: 'Start przerwy', break_end: 'Koniec przerwy', clock_out: 'Wyjście' };
+const HubClockCard = () => {
+  const [stan, setStan] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const zaladuj = () => api('/clock?action=hub-state').then((r) => { if (r.success) setStan(r); }).catch(() => {});
+  useEffect(() => { zaladuj(); const t = setInterval(zaladuj, 30000); return () => clearInterval(t); }, []);
+  const zdarzenie = async (typ, breakType) => {
+    const pytania = { clock_in: 'Rozpocząć zmianę?', break_start: 'Rozpocząć przerwę?', break_end: 'Zakończyć przerwę i wrócić do pracy?', clock_out: 'Zakończyć zmianę?' };
+    if (!window.confirm(pytania[typ])) return;
+    setBusy(true);
+    const r = await apiSend('/clock?action=hub-event', 'POST', { action: typ, breakType, clientEventId: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
+    setBusy(false);
+    if (r.success) setStan((x) => ({ ...(x || {}), state: r.state, events: r.events || ((x && x.events) || []) }));
+    else alert(r.error || 'Nie udało się zapisać zdarzenia');
+  };
+  const st = stan ? stan.state : null;
+  const chip = st === 'working' ? ['W pracy', '#2E9E5B', '#e8f2ef'] : st === 'break' ? ['Na przerwie', '#B26A00', '#fff4e0'] : ['Poza zmianą', colors.primary.medium, colors.primary.bgLight];
+  const czasEv = (e) => new Date(e.at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  const btn = (kol) => `w-full py-3.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50`;
+  return (
+    <div className="bg-white rounded-2xl shadow-sm p-4" style={{ borderLeft: '4px solid ' + colors.primary.dark }}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-semibold flex items-center gap-2"><Clock3 size={19} style={{ color: colors.primary.medium }} /> Rejestracja czasu</h3>
+        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ color: chip[1], backgroundColor: chip[2] }}>{chip[0]}</span>
+      </div>
+      {stan && stan.planned && <p className="text-xs mb-3" style={{ color: colors.primary.light }}>Zaplanowana zmiana: <b style={{ color: colors.primary.darkest }}>{stan.planned.start}–{stan.planned.end}</b>{stan.planned.station ? ` · ${stan.planned.station}` : ''}</p>}
+      {!stan && <p className="text-sm text-slate-400">Ładowanie…</p>}
+      {st === 'off' && <button disabled={busy} onClick={() => zdarzenie('clock_in')} className={btn()} style={{ backgroundColor: colors.primary.darkest }}><LogIn size={18} /> Rozpocznij zmianę</button>}
+      {st === 'working' && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button disabled={busy} onClick={() => zdarzenie('break_start', 'unpaid')} className="py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: '#fff4e0', color: '#B26A00' }}><Coffee size={17} /> Przerwa niepłatna</button>
+            <button disabled={busy} onClick={() => zdarzenie('break_start', 'paid')} className="py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: colors.primary.bgLight, color: colors.primary.dark }}><Coffee size={17} /> Przerwa płatna</button>
+          </div>
+          <button disabled={busy} onClick={() => zdarzenie('clock_out')} className={btn()} style={{ backgroundColor: '#b94352' }}><LogOut size={18} /> Zakończ zmianę</button>
+        </div>
+      )}
+      {st === 'break' && <button disabled={busy} onClick={() => zdarzenie('break_end')} className={btn()} style={{ backgroundColor: colors.primary.medium }}><Coffee size={18} /> Wróć z przerwy</button>}
+      {stan && (stan.events || []).length > 0 && (
+        <div className="mt-3 pt-3 border-t space-y-1.5" style={{ borderColor: colors.primary.bg }}>
+          {[...stan.events].reverse().slice(0, 4).map((e) => (
+            <div key={e.cid} className="flex items-center gap-2 text-xs" style={{ color: colors.primary.dark }}>
+              <History size={13} style={{ color: colors.primary.light }} />
+              <span className="font-medium">{HUB_ETYKIETY[e.type]}{e.type === 'break_start' ? (e.paid ? ' (płatna)' : ' (niepłatna)') : ''}</span>
+              <span className="ml-auto tabular-nums" style={{ color: colors.primary.light }}>{czasEv(e)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ═════════ REX WorkRhythm Modules v1.0.0 — Dyspozycyjność (mobile) ═════════
 const DY_TYPES = [
@@ -513,6 +591,7 @@ const HomePage = ({ nextShift, onNavigateToShifts, monthHours, monthShiftCount, 
   const niepotwierdzone = publikacje.filter((x) => !x.potwierdzone);
   return (
     <div className="p-4 space-y-4 pb-24">
+      <HubClockCard />
       {niepotwierdzone.map((pb) => (
         <div key={pb.month} className="bg-white rounded-2xl shadow-sm p-4" style={{ borderLeft: '4px solid #d67943' }}>
           <div className="flex items-center justify-between gap-3">
@@ -626,10 +705,10 @@ const HoursPage = ({ shifts }) => {
 
 const AboutPage = () => (
   <div className="min-h-screen bg-slate-50 p-4 pb-24"><div className="bg-white rounded-2xl overflow-hidden">
-    <div className="p-8 text-center" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-light">REX <span style={{color: colors.primary.bg}}>Cloud</span></span><p className="mt-1 text-[11px] font-bold tracking-[0.3em]" style={{color: colors.primary.light}}>EMPLOYEE</p><p className="mt-1" style={{color: colors.primary.bg}}>WorkRhythm</p></div>
+    <div className="p-8 text-center" style={{background: 'linear-gradient(to right, '+colors.primary.darkest+', '+colors.primary.dark+')'}}><Cloud size={40} className="text-white mx-auto mb-4" /><span className="text-white text-2xl font-bold tracking-[0.22em]">ORDO</span><p className="mt-1 text-[11px] font-bold tracking-[0.3em]" style={{color: colors.primary.light}}>EMPLOYEE HUB</p><p className="mt-1" style={{color: colors.primary.bg}}>ORDO Workforce Cloud</p></div>
     <div className="p-6 space-y-4">
       <div className="rounded-xl p-4" style={{backgroundColor: colors.primary.bg}}><span className="font-semibold" style={{color: colors.primary.darkest}}>Jak to działa</span><ul className="text-sm mt-2 space-y-1" style={{color: colors.primary.dark}}><li>• Logujesz się swoim imieniem lub nazwiskiem</li><li>• Widzisz swój grafik ułożony przez kierownika</li><li>• Grafik pochodzi z matrycy Excel</li></ul></div>
-      <p className="text-slate-500 text-sm text-center">© 2026 REX Cloud EMPLOYEE by M. Szewczyk</p>
+      <p className="text-slate-500 text-sm text-center">© 2026 ORDO Employee Hub by M. Szewczyk</p>
     </div>
   </div></div>
 );
@@ -707,6 +786,232 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
   );
 };
 
+
+// ═════════ ORDO EMPLOYEE HUB — układ wg wzorca v8 (realne dane) ═════════
+const EH_TABS = [
+  ['start', 'Start', Home], ['schedule', 'Grafik', Calendar], ['time', 'Czas', Clock3],
+  ['requests', 'Wnioski', RefreshCw], ['more', 'Więcej', Menu],
+];
+const ehCzas = (ts) => new Date(ts).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+const ehDur = (sek) => `${String(Math.floor(sek / 3600)).padStart(2, '0')}:${String(Math.floor(sek / 60) % 60).padStart(2, '0')}:${String(sek % 60).padStart(2, '0')}`;
+const EH_PUNCH = {
+  clock_in: { title: 'Rozpocząć zmianę?', button: 'Potwierdź wejście', note: 'Zdarzenie trafi bezpośrednio do karty czasu i obsady managera.' },
+  break_start: { title: 'Rozpocząć przerwę?', button: 'Rozpocznij przerwę', note: 'Manager zobaczy zmianę statusu od razu.' },
+  break_end: { title: 'Zakończyć przerwę?', button: 'Wróć do pracy', note: 'Czas przerwy zostanie dopisany do dzisiejszej karty czasu.' },
+  clock_out: { title: 'Zakończyć zmianę?', button: 'Potwierdź wyjście', note: 'Po wyjściu karta czasu trafi do rozliczenia.' },
+};
+
+const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, openTeam, swapActions }) => {
+  const [tab, setTab] = useState('start');
+  const [now, setNow] = useState(new Date());
+  const [hub, setHub] = useState(null);
+  const [pending, setPending] = useState(null);
+  const [pendingBreak, setPendingBreak] = useState('unpaid');
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState('');
+  const [modal, setModal] = useState(null);
+  const [dyspo, setDyspo] = useState([]);
+  const [absencje, setAbsencje] = useState([]);
+  const [okno, setOkno] = useState(null);
+  const [avDraft, setAvDraft] = useState({ date: '', kind: 'available', time: '14:00' });
+  const [abDraft, setAbDraft] = useState({ type: 'urlop', from: '', to: '', note: '' });
+  const [swapSel, setSwapSel] = useState('');
+  const dzis = getTodayString();
+  const pokaz = (m) => { setToast(m); setTimeout(() => setToast(''), 3600); };
+
+  const zaladujHub = () => api('/clock?action=hub-state').then((r) => { if (r.success) setHub(r); }).catch(() => {});
+  const zaladujWnioski = () => {
+    api('/availability?reqs=1').then((r) => { if (r.success) setDyspo(r.requests || []); }).catch(() => {});
+    api('/absences').then((r) => { if (r.success) setAbsencje(r.absences || []); }).catch(() => {});
+    api('/availability?window=1').then((r) => { if (r.success && r.okno) { setOkno(r.okno); setAvDraft((v) => v.date ? v : { ...v, date: `${r.okno.targetMonth}-01` }); } }).catch(() => {});
+  };
+  useEffect(() => { zaladujHub(); zaladujWnioski(); const t1 = setInterval(zaladujHub, 30000); const t2 = setInterval(() => setNow(new Date()), 1000); return () => { clearInterval(t1); clearInterval(t2); }; }, []);
+
+  const ev = (hub && hub.events) || [];
+  const workState = !hub ? 'idle' : hub.state === 'working' ? 'working' : hub.state === 'break' ? 'break' : ev.some((e) => e.type === 'clock_out') ? 'done' : 'idle';
+  const workLabel = workState === 'idle' ? 'Poza zmianą' : workState === 'working' ? 'Na zmianie' : workState === 'break' ? 'Na przerwie' : 'Zmiana zakończona';
+  const startEv = [...ev].reverse().find((e) => e.type === 'clock_in');
+  const elapsed = startEv && (workState === 'working' || workState === 'break') ? Math.max(0, Math.floor((now.getTime() - startEv.at) / 1000)) : 0;
+  const dzisZmiana = shifts.filter((x) => x.date === dzis).sort((a, b) => a.start.localeCompare(b.start))[0] || null;
+
+  const confirmPunch = async () => {
+    if (!pending) return;
+    setBusy(true);
+    const r = await apiSend('/clock?action=hub-event', 'POST', { action: pending, breakType: pending === 'break_start' ? pendingBreak : undefined, clientEventId: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
+    setBusy(false); const typ = pending; setPending(null);
+    if (r.success) {
+      setHub((x) => ({ ...(x || {}), state: r.state, events: r.events || ((x && x.events) || []) }));
+      pokaz(typ === 'clock_in' ? 'Zmiana rozpoczęta. Manager widzi Cię teraz w obsadzie LIVE.' : typ === 'clock_out' ? 'Zmiana zakończona. Karta czasu została zapisana.' : typ === 'break_start' ? 'Przerwa rozpoczęta.' : 'Przerwa zakończona. Miłego powrotu!');
+    } else pokaz(r.error || 'Nie udało się zapisać zdarzenia');
+  };
+
+  const wyslijDyspo = async () => {
+    const typMap = { available: 'available', unavailable: 'unavailable', from: 'from_time', until: 'until_time' };
+    const r = await apiSend('/availability?action=request', 'POST', { date: avDraft.date, type: typMap[avDraft.kind], startTime: avDraft.time, endTime: avDraft.time, note: '' });
+    if (r.success) { setModal(null); zaladujWnioski(); pokaz('Dyspozycyjność została wysłana do managera.'); }
+    else pokaz(r.error || 'Nie udało się wysłać dyspozycji');
+  };
+  const wyslijAbsencje = async () => {
+    const r = await apiSend('/absences', 'POST', { type: abDraft.type, from: abDraft.from, to: abDraft.to, reason: abDraft.note });
+    if (r.success) { setModal(null); zaladujWnioski(); pokaz('Wniosek wysłany. Manager otrzymał powiadomienie.'); }
+    else pokaz(r.error || 'Nie udało się wysłać wniosku');
+  };
+
+  const mies = useMemo(() => { const set = new Set(shifts.map((x) => x.date.slice(0, 7))); set.add(dzis.slice(0, 7)); return [...set].sort(); }, [shifts]);
+  const [mIdx, setMIdx] = useState(-1);
+  useEffect(() => { if (mIdx === -1 && mies.length) setMIdx(Math.max(0, mies.indexOf(dzis.slice(0, 7)))); }, [mies]);
+  const ym = mies[Math.max(0, mIdx)] || dzis.slice(0, 7);
+  const [selDay, setSelDay] = useState(dzis);
+  const kalDni = useMemo(() => {
+    const [y, m] = ym.split('-').map(Number);
+    const lead = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+    const dim = new Date(y, m, 0).getDate();
+    const out = [...Array.from({ length: lead }, () => null), ...Array.from({ length: dim }, (_, i) => `${ym}-${String(i + 1).padStart(2, '0')}`)];
+    while (out.length % 7 !== 0 || out.length < 42) out.push(null);
+    return out;
+  }, [ym]);
+  const zmianyDnia = (d) => shifts.filter((x) => x.date === d);
+  const mcLabel = (k) => { const [y, m] = String(k).split('-').map(Number); return `${monthNames[m - 1]} ${y}`; };
+  const selShifts = zmianyDnia(selDay);
+  const niepotw = (publikacje || []).filter((x) => !x.potwierdzone);
+  const mieszH = shifts.filter((x) => x.date.slice(0, 7) === ym).reduce((a, x2) => a + (x2.hours != null ? x2.hours : calcHours(x2.start, x2.end)), 0);
+  const zaNamiH = shifts.filter((x) => x.date.slice(0, 7) === ym && x.date < dzis).reduce((a, x2) => a + (x2.hours || 0), 0);
+
+  const me = user.name;
+  const mojaProsba = (x) => x.requesterAccountId ? x.requesterAccountId === user.id : normalizeName(x.requester) === normalizeName(me);
+  const otwarteInnych = swaps.filter((x) => x.status === 'open' && !mojaProsba(x));
+  const mojeProsby = swaps.filter(mojaProsba).sort((a, b) => b.createdAt - a.createdAt);
+  const zgloszony = (x) => x.volunteers.some((v) => normalizeName(v) === normalizeName(me));
+  const przyszle = shifts.filter((x) => x.date >= dzis).sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+  const DY_LBL = (r) => r.type === 'available' ? 'Dostępny · cały dzień' : r.type === 'unavailable' ? 'Niedostępny · cały dzień' : r.type === 'from_time' ? `Dostępny od ${r.startTime}` : r.type === 'until_time' ? `Dostępny do ${r.endTime}` : `Zmiana ${r.startTime}–${r.endTime}`;
+  const AB_LBL = { urlop: 'Urlop wypoczynkowy', uz: 'Urlop na żądanie', l4: 'Zwolnienie (L4)', inne: 'Inna absencja' };
+  const ST_LBL = { pending: 'Do decyzji', open: 'Do decyzji', approved: 'Zatwierdzony', rejected: 'Odrzucony', cancelled: 'Wycofany' };
+  const inicjaly = (user.display || user.name).split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  const dataNaglowek = new Intl.DateTimeFormat('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+
+  return (
+    <main className="employee-hub">
+      {toast && <div className="eh-toast"><Check size={17} />{toast}</div>}
+      <header className="eh-header">
+        <div className="eh-brand"><b style={{ letterSpacing: '.2em', fontSize: 17, color: '#3f0b1c' }}>ORDO</b><span>EMPLOYEE HUB</span></div>
+        <nav aria-label="Nawigacja Employee Hub">{EH_TABS.map(([id, label, Icon]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}><Icon size={17} />{label}</button>)}</nav>
+        <div className="eh-header-actions"><button aria-label="Powiadomienia" onClick={() => setTab('requests')}><Bell size={19} />{niepotw.length > 0 && <i />}</button><div>{inicjaly}</div></div>
+      </header>
+
+      <div className="eh-container">
+        {tab === 'start' && <>
+          <section className="eh-welcome"><div><span>{dataNaglowek}</span><h1>Dzień dobry, {(user.display || user.name).split(' ')[0]}</h1><p>{dzisZmiana ? `Masz dziś zmianę ${dzisZmiana.start}–${dzisZmiana.end} na stanowisku ${dzisZmiana.station}.` : 'Nie masz dziś zaplanowanej zmiany.'} Wszystkie najważniejsze akcje są poniżej.</p></div><div className="eh-current-time"><Clock3 size={18} /><span>{now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</span></div></section>
+
+          <section className="eh-home-grid">
+            <article className={`eh-punch-card ${workState}`}>
+              <div className="eh-punch-head"><div><span>REJESTRACJA CZASU</span><h2>{workLabel}</h2></div><em><i />{workState === 'idle' ? 'GOTOWE' : workState === 'done' ? 'ZAPISANO' : 'AKTYWNE'}</em></div>
+              <div className="eh-punch-time"><strong>{workState === 'idle' ? ((hub && hub.planned && hub.planned.start) || (dzisZmiana && dzisZmiana.start) || '—') : ehDur(elapsed)}</strong><span>{workState === 'idle' ? 'planowany start' : 'czas od rozpoczęcia zmiany'}</span></div>
+              <div className="eh-location"><MapPinIcon size={16} /><span><strong>{DEFAULT_LOCATION}</strong><small>{hub && hub.planned ? `Zaplanowana zmiana ${hub.planned.start}–${hub.planned.end}${hub.planned.station ? ` · ${hub.planned.station}` : ''}` : 'Rejestracja w aplikacji Employee Hub'}</small></span><Lock size={18} /></div>
+              {workState === 'idle' && <button className="eh-main-punch" disabled={busy} onClick={() => setPending('clock_in')}><LogIn size={20} /> Rozpocznij zmianę</button>}
+              {workState === 'working' && <div className="eh-punch-actions"><button disabled={busy} onClick={() => { setPendingBreak('unpaid'); setPending('break_start'); }}><Coffee size={18} /> Rozpocznij przerwę</button><button disabled={busy} onClick={() => setPending('clock_out')}><LogOut size={18} /> Zakończ zmianę</button></div>}
+              {workState === 'break' && <button className="eh-main-punch" disabled={busy} onClick={() => setPending('break_end')}><Timer size={20} /> Zakończ przerwę</button>}
+              {workState === 'done' && <button className="eh-main-punch" disabled><Check size={20} /> Zmiana zakończona</button>}
+              <small className="eh-punch-note">Każde zdarzenie trafia bezpośrednio do karty czasu i obsady managera.</small>
+            </article>
+            <aside className="eh-today-stack">
+              <article className="eh-card eh-next-shift"><div className="eh-card-head"><span>DZISIEJSZA ZMIANA</span><em>{dzisZmiana ? 'OPUBLIKOWANA' : 'WOLNE'}</em></div><strong>{dzisZmiana ? `${dzisZmiana.start}–${dzisZmiana.end}` : '—'}</strong><p>{dzisZmiana ? `${dzisZmiana.station} · ${(dzisZmiana.hours != null ? dzisZmiana.hours : calcHours(dzisZmiana.start, dzisZmiana.end))} h` : 'Brak zaplanowanej zmiany na dziś.'}</p><div><span><Users size={15} /> Zespół dnia po dwukliku w grafiku</span><button onClick={() => setTab('schedule')}>Szczegóły <ChevronRight size={15} /></button></div></article>
+              <article className="eh-card eh-month-hours"><div className="eh-card-head"><span>{mcLabel(ym).toUpperCase()}</span><button onClick={() => setTab('time')}>Historia</button></div><div><strong>{mieszH.toFixed(1).replace('.', ',')} h</strong><span>zaplanowano</span></div><i><b style={{ width: `${Math.min(100, Math.round(zaNamiH / Math.max(1, mieszH) * 100))}%` }} /></i><small>{zaNamiH.toFixed(1).replace('.', ',')} / {mieszH.toFixed(1).replace('.', ',')} h za nami</small></article>
+            </aside>
+          </section>
+
+          <section className="eh-quick-grid">
+            <button onClick={() => setModal('availability')}><i><CalendarCheck2 size={19} /></i><span><strong>Dyspozycyjność</strong><small>{okno ? (okno.otwarte ? `Okno otwarte do 20.${okno.deadline.slice(5, 7)}` : 'Okno zamknięte') : 'Dodaj dzień i godziny'}</small></span><ChevronRight size={16} /></button>
+            <button onClick={() => setModal('absence')}><i><Calendar size={19} /></i><span><strong>Nieobecność</strong><small>Złóż nowy wniosek</small></span><ChevronRight size={16} /></button>
+            <button onClick={() => setTab('requests')}><i><RefreshCw size={19} /></i><span><strong>Giełda zmian</strong><small>{otwarteInnych.length ? `${otwarteInnych.length} otwartych ofert` : 'Brak otwartych ofert'}</small></span><ChevronRight size={16} /></button>
+            <button className="is-disabled" disabled><i><Briefcase size={19} /></i><span><strong>Zadania</strong><small>Wkrótce</small></span><ChevronRight size={16} /></button>
+          </section>
+
+          <section className="eh-bottom-grid">
+            <article className="eh-card eh-activity"><div className="eh-card-head"><span>DZISIAJ</span><button onClick={() => setTab('time')}>Pełna karta czasu</button></div>{ev.length ? [...ev].reverse().slice(0, 4).map((e) => <div key={e.cid}><i>{e.type.includes('break') ? <Coffee size={16} /> : e.type === 'clock_in' ? <LogIn size={16} /> : <LogOut size={16} />}</i><span><strong>{HUB_ETYKIETY[e.type]}{e.type === 'break_start' ? (e.paid ? ' (płatna)' : ' (niepłatna)') : ''}</strong><small>ORDO Employee Hub · {DEFAULT_LOCATION}</small></span><em>{ehCzas(e.at)}</em></div>) : <div className="eh-empty"><History size={20} /><span>Pierwsze zdarzenie pojawi się po rozpoczęciu zmiany.</span></div>}</article>
+            <article className="eh-card eh-learning eh-learning-disabled"><div className="eh-card-head"><span>SZKOLENIA</span><em>WYŁĄCZONE</em></div><div><i><Briefcase size={24} /></i><span><strong>Moduł szkoleń jest nieaktywny</strong><small>Zostanie udostępniony w późniejszym terminie</small></span></div><button disabled><X size={16} /> Tymczasowo niedostępne</button></article>
+          </section>
+        </>}
+
+        {tab === 'schedule' && <section className="eh-page">
+          <div className="eh-page-heading"><div><span>MÓJ CZAS</span><h1>Kalendarz miesięczny</h1><p>Cały miesiąc w jednym widoku. Kliknij dzień, a dwuklikiem na zmianie otwórz skład zespołu.</p></div><div className="eh-month-control"><button onClick={() => setMIdx((v) => Math.max(0, v - 1))} aria-label="Poprzedni miesiąc"><ChevronLeft size={17} /></button><strong>{mcLabel(ym)}</strong><button onClick={() => setMIdx((v) => Math.min(mies.length - 1, v + 1))} aria-label="Następny miesiąc"><ChevronRight size={17} /></button><button onClick={() => { setMIdx(Math.max(0, mies.indexOf(dzis.slice(0, 7)))); setSelDay(dzis); }}>Dzisiaj</button></div></div>
+          <div className="eh-month-layout">
+            <article className="eh-card eh-month-calendar">
+              <div className="eh-calendar-toolbar"><div><span>GRAFIK OPUBLIKOWANY</span><strong>{mcLabel(ym)}</strong></div><small><Users size={14} /> Dwuklik na zmianie = podgląd zespołu</small></div>
+              <div className="eh-calendar-weekdays">{['PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB', 'ND'].map((d2) => <span key={d2}>{d2}</span>)}</div>
+              <div className="eh-calendar-grid">{kalDni.map((d2, i) => { const zs = d2 ? zmianyDnia(d2) : []; return <button key={i} disabled={!d2} className={`${d2 === selDay ? 'selected' : ''} ${zs.length ? 'has-shift' : ''} ${d2 === dzis ? 'today' : ''}`} onClick={() => d2 && setSelDay(d2)} onDoubleClick={() => d2 && zs.length && openTeam(d2)}><span>{d2 ? Number(d2.slice(8)) : ''}</span>{zs.slice(0, 1).map((z) => <i key={z.start}><strong>{z.start}–{z.end}</strong><small>{z.station}</small></i>)}{d2 === dzis && <em>DZIŚ</em>}</button>; })}</div>
+            </article>
+            <aside className="eh-month-side">
+              <article className="eh-card eh-day-detail"><div className="eh-card-head"><span>{Number(selDay.slice(8))} {mcLabel(selDay.slice(0, 7)).toUpperCase()}</span><em>{selShifts.length ? `${selShifts.length} ZMIANA` : 'WOLNE'}</em></div>{selShifts.length ? selShifts.map((z, i) => <div className="eh-selected-shift" key={i} onDoubleClick={() => openTeam(selDay)}><i><Calendar size={18} /></i><span><small>{nazwaStanowiska(z)}</small><strong>{z.start}–{z.end}</strong><em><MapPinIcon size={12} /> {DEFAULT_LOCATION}</em></span><b>{(z.hours != null ? z.hours : calcHours(z.start, z.end))} h</b><button onClick={() => openTeam(selDay)}><Users size={15} /> Zespół</button></div>) : <div className="eh-day-empty"><CalendarCheck2 size={22} /><strong>Brak zaplanowanej zmiany</strong><span>To Twój dzień wolny. W kalendarzu nie ma publikowanych godzin.</span></div>}<p className="eh-doubleclick-hint"><Users size={14} /> Dwuklik na kartę zmiany lub przycisk „Zespół" pokaże obsadę tego dnia.</p></article>
+              {niepotw.length > 0 && <article className="eh-card eh-confirm-card"><i><CalendarCheck2 size={22} /></i><h2>Grafik opublikowany</h2><p>Potwierdź, że znasz godziny swoich zmian: {niepotw.map((x) => x.month).join(', ')}.</p><button onClick={() => onConfirmGrafik(niepotw[0].month)}>Potwierdź grafik</button></article>}
+            </aside>
+          </div>
+        </section>}
+
+        {tab === 'time' && <section className="eh-page">
+          <div className="eh-page-heading"><div><span>MOJE GODZINY</span><h1>Czas pracy</h1><p>Zdarzenia z aplikacji i miesięczny bilans planu.</p></div></div>
+          <section className="eh-stats"><div><span>Plan · {mcLabel(ym)}</span><strong>{mieszH.toFixed(1).replace('.', ',')} h</strong><small>{shifts.filter((x) => x.date.slice(0, 7) === ym).length} zmian</small></div><div><span>Za nami</span><strong>{zaNamiH.toFixed(1).replace('.', ',')} h</strong><small>wg planu</small></div><div><span>Dziś</span><strong>{workLabel}</strong><small>{ev.length} zdarzeń</small></div><div><span>Najbliższa zmiana</span><strong>{przyszle[0] ? `${Number(przyszle[0].date.slice(8))}.${przyszle[0].date.slice(5, 7)}` : '—'}</strong><small>{przyszle[0] ? `${przyszle[0].start}–${przyszle[0].end}` : 'brak w grafiku'}</small></div></section>
+          <section className="eh-time-layout"><article className="eh-card eh-time-history"><div className="eh-card-head"><span>KARTA DZISIAJ</span><em>{workLabel}</em></div>{((hub && hub.planned) || dzisZmiana) && <div className="eh-time-line"><i /><span>Planowana zmiana</span><strong>{hub && hub.planned ? `${hub.planned.start}–${hub.planned.end}` : `${dzisZmiana.start}–${dzisZmiana.end}`}</strong></div>}{ev.map((e) => <div className="eh-time-line" key={e.cid}><i className="recorded" /><span>{HUB_ETYKIETY[e.type]}{e.type === 'break_start' ? (e.paid ? ' (płatna)' : ' (niepłatna)') : ''}</span><strong>{ehCzas(e.at)}</strong></div>)}{!ev.length && <div className="eh-empty"><Clock3 size={20} /><span>Brak zdarzeń. Rozpocznij zmianę na stronie startowej.</span></div>}</article><article className="eh-card eh-month-list"><div className="eh-card-head"><span>NADCHODZĄCE ZMIANY</span><button onClick={() => setTab('schedule')}>Grafik</button></div>{przyszle.slice(0, 5).map((z, i) => <div key={i}><span><strong>{new Intl.DateTimeFormat('pl-PL', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date(z.date + 'T12:00:00'))}</strong><small>{z.start}–{z.end} · {z.station}</small></span><b>{(z.hours != null ? z.hours : calcHours(z.start, z.end))} h</b><em>Opublikowana</em></div>)}{!przyszle.length && <div className="eh-empty"><Calendar size={20} /><span>Brak nadchodzących zmian w opublikowanym grafiku.</span></div>}</article></section>
+        </section>}
+
+        {tab === 'requests' && <section className="eh-page">
+          <div className="eh-page-heading"><div><span>SELF-SERVICE</span><h1>Wnioski i zmiany</h1><p>Dyspozycyjność, urlopy oraz giełda zamian w jednym miejscu.</p></div><button className="eh-primary" onClick={() => setModal('absence')}><MessageSquare size={16} /> Nowy wniosek</button></div>
+          <section className="eh-request-grid">
+            <article className="eh-card eh-open-shift"><div className="eh-card-head"><span>GIEŁDA ZAMIAN</span><em>{otwarteInnych.length} otwartych</em></div>
+              {otwarteInnych.slice(0, 2).map((x) => <div key={x.id}><i><span>{new Intl.DateTimeFormat('pl-PL', { weekday: 'short' }).format(new Date(x.shift.date + 'T12:00:00')).replace('.', '').toUpperCase()}</span><strong>{Number(x.shift.date.slice(8))}</strong><small>{mcLabel(x.shift.date.slice(0, 7)).split(' ')[0].toUpperCase()}</small></i><span><small>{x.shift.station} · {x.requesterDisplay || x.requester}</small><strong>{x.shift.start}–{x.shift.end}</strong><em>{x.shift.hours} h{x.note ? ` · „${x.note}"` : ''}</em></span></div>)}
+              {otwarteInnych[0] ? <p><Lock size={15} /> Zgłoszenie wymaga akceptacji managera — zamiana przypisze zmianę do Twojego konta.</p> : null}
+              {otwarteInnych[0] ? (zgloszony(otwarteInnych[0]) ? <button onClick={() => swapActions.unvolunteer(otwarteInnych[0].id)}>Wycofaj zgłoszenie</button> : <button onClick={() => swapActions.volunteer(otwarteInnych[0].id)}>Zgłoś się po zmianę</button>) : <div className="eh-empty"><RefreshCw size={20} /><span>Brak otwartych ofert. Możesz wystawić własną zmianę poniżej.</span></div>}
+              {przyszle.length > 0 && <div style={{ marginTop: 10, display: 'flex', gap: 8 }}><select value={swapSel} onChange={(e) => setSwapSel(e.target.value)} style={{ flex: 1, padding: '8px 10px', borderRadius: 10, border: '1px solid var(--eh-line)', fontSize: 12 }}><option value="">— wystaw moją zmianę —</option>{przyszle.map((z, i) => <option key={i} value={`${z.date}|${z.start}|${z.end}|${z.station}`}>{z.date} · {z.start}–{z.end} · {z.station}</option>)}</select><button className="eh-primary" style={{ height: 38 }} disabled={!swapSel} onClick={() => { const cz = swapSel.split('|'); const z = przyszle.find((x2) => x2.date === cz[0] && x2.start === cz[1] && x2.end === cz[2]); swapActions.create({ date: cz[0], start: cz[1], end: cz[2], station: cz[3], hours: z && z.hours }, ''); setSwapSel(''); }}>Wystaw</button></div>}
+            </article>
+            <article className="eh-card eh-my-requests"><div className="eh-card-head"><span>MOJE WNIOSKI</span><button onClick={() => setModal('availability')}><CalendarCheck2 size={13} /> Dodaj dyspozycyjność</button></div>
+              {dyspo.slice(0, 3).map((r) => <div key={r.id}><i><CalendarCheck2 size={16} /></i><span><strong>{DY_LBL(r)}</strong><small>{new Intl.DateTimeFormat('pl-PL', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date(r.date + 'T12:00:00'))}{r.recurrence === 'weekly' ? ' · co tydzień' : ''}{r.managerNote ? ` · „${r.managerNote}"` : ''}</small></span><em>{ST_LBL[r.status]}</em></div>)}
+              {absencje.slice(0, 3).map((a) => <div key={a.id}><i><Calendar size={16} /></i><span><strong>{AB_LBL[a.type] || a.type}</strong><small>{a.from} → {a.to}{a.decidedBy ? ` · ${a.decidedBy}` : ''}</small></span><em>{ST_LBL[a.status]}</em></div>)}
+              {mojeProsby.slice(0, 2).map((x) => <div key={x.id}><i><RefreshCw size={16} /></i><span><strong>Zamiana zmiany</strong><small>{opisZmiany(x.shift)}</small></span><em>{statusZamiany(x).txt.split(' — ')[0]}</em></div>)}
+              {!dyspo.length && !absencje.length && !mojeProsby.length && <div className="eh-empty"><MessageSquare size={20} /><span>Nie masz jeszcze żadnych wniosków.</span></div>}
+            </article>
+          </section>
+        </section>}
+
+        {tab === 'more' && <section className="eh-page">
+          <div className="eh-page-heading"><div><span>PROFIL I NARZĘDZIA</span><h1>Więcej</h1><p>Profil, informacje o aplikacji i wylogowanie.</p></div></div>
+          <section className="eh-profile"><article className="eh-card eh-profile-card"><i>{inicjaly}</i><span><h2>{user.display || user.name}</h2><p>Pracownik · {DEFAULT_LOCATION}</p><small>Login: {user.login}</small></span><button onClick={onLogout}>Wyloguj</button></article>
+            <div className="eh-more-grid">
+              <button onClick={() => setModal('availability')}><i><CalendarCheck2 size={20} /></i><span><strong>Dyspozycyjność</strong><small>Dodaj dzień i godziny</small></span><ChevronRight size={17} /></button>
+              <button onClick={() => setModal('absence')}><i><Calendar size={20} /></i><span><strong>Urlopy i nieobecności</strong><small>Nowy wniosek</small></span><ChevronRight size={17} /></button>
+              <button onClick={() => setModal('about')}><i><Info size={20} /></i><span><strong>O aplikacji</strong><small>ORDO Employee Hub</small></span><ChevronRight size={17} /></button>
+              <button className="is-disabled" disabled><i><Briefcase size={20} /></i><span><strong>Learning</strong><small>Moduł tymczasowo wyłączony</small></span><X size={17} /></button>
+              <button className="is-disabled" disabled><i><MessageSquare size={20} /></i><span><strong>Feed i wiadomości</strong><small>Wkrótce</small></span><X size={17} /></button>
+              <button className="is-disabled" disabled><i><Lock size={20} /></i><span><strong>Prywatność i zgody</strong><small>Wkrótce</small></span><X size={17} /></button>
+            </div>
+          </section>
+        </section>}
+      </div>
+
+      <nav className="eh-mobile-nav" aria-label="Nawigacja mobilna">{EH_TABS.map(([id, label, Icon]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}><Icon size={20} /><span>{label}</span></button>)}</nav>
+
+      {pending && <Dialog title={EH_PUNCH[pending].title} kicker="ORDO EMPLOYEE HUB" description="Zdarzenie zostanie zapisane z aktualną godziną." onClose={() => setPending(null)} size="small" actions={<><button onClick={() => setPending(null)}>Anuluj</button>{pending === 'break_start' && <button onClick={() => setPendingBreak(pendingBreak === 'paid' ? 'unpaid' : 'paid')}>{pendingBreak === 'paid' ? 'Przerwa: płatna' : 'Przerwa: niepłatna'}</button>}<button className="dialog-primary" disabled={busy} onClick={confirmPunch}><Check size={15} /> {EH_PUNCH[pending].button}</button></>}>
+        <div className="eh-punch-confirm"><div><Clock3 size={21} /><span><strong>{now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</strong><small>czas urządzenia</small></span></div><div><MapPinIcon size={21} /><span><strong>{DEFAULT_LOCATION}</strong><small>lokalizacja zapisana przy zdarzeniu</small></span></div></div>
+        <div className="dialog-notice"><Lock size={16} /><span>{EH_PUNCH[pending].note}</span></div>
+      </Dialog>}
+
+      {modal === 'availability' && <Dialog title="Nowa dyspozycyjność" kicker="DZIEŃ PO DNIU" description={okno ? `Dyspozycje zbieramy na ${new Intl.DateTimeFormat('pl-PL', { month: 'long', year: 'numeric' }).format(new Date(okno.targetMonth + '-01T12:00:00'))}${okno.otwarte ? ` · do 20.${okno.deadline.slice(5, 7)}` : ' · OKNO ZAMKNIĘTE'}.` : 'Wybierz datę i określ, kiedy możesz pracować.'} onClose={() => setModal(null)} actions={<><button onClick={() => setModal(null)}>Anuluj</button><button className="dialog-primary" disabled={!avDraft.date || (okno && !okno.otwarte)} onClick={wyslijDyspo}><MessageSquare size={15} /> Wyślij dyspozycyjność</button></>}>
+        <div className="eh-availability-form">
+          <label className="dialog-field eh-availability-date">Data dnia<input type="date" value={avDraft.date} min={okno ? `${okno.targetMonth}-01` : undefined} max={okno ? `${okno.targetMonth}-31` : undefined} onChange={(e) => setAvDraft((v) => ({ ...v, date: e.target.value }))} /></label>
+          <div className="eh-availability-label"><span>Dyspozycja</span><small>Wybierz jeden wariant dla wskazanego dnia</small></div>
+          <div className="eh-availability-options">{[['available', 'Dostępny', 'Mogę pracować przez cały dzień', Check], ['unavailable', 'Niedostępny', 'Nie mogę przyjąć zmiany', X], ['from', 'Dostępny od', 'Mogę rozpocząć od wskazanej godziny', Clock3], ['until', 'Dostępny do', 'Mogę pracować do wskazanej godziny', Clock3]].map(([id, label, copy, Icon]) => <button type="button" key={id} className={avDraft.kind === id ? 'active' : ''} onClick={() => setAvDraft((v) => ({ ...v, kind: id }))}><i><Icon size={16} /></i><span><strong>{label}</strong><small>{copy}</small></span>{avDraft.kind === id && <Check size={15} />}</button>)}</div>
+          {(avDraft.kind === 'from' || avDraft.kind === 'until') && <label className="dialog-field eh-availability-time">{avDraft.kind === 'from' ? 'Dostępny od godziny' : 'Dostępny do godziny'}<input autoFocus type="time" value={avDraft.time} onChange={(e) => setAvDraft((v) => ({ ...v, time: e.target.value }))} /></label>}
+        </div>
+        <div className="dialog-notice" style={{ marginTop: 14 }}><Info size={16} /><span>Każda data ma osobny wpis. Ponowne wysłanie dla tego samego dnia zastąpi wcześniejszą dyspozycyjność.</span></div>
+      </Dialog>}
+
+      {modal === 'absence' && <Dialog title="Nowy wniosek o nieobecność" kicker="EMPLOYEE SELF-SERVICE" description="Wniosek trafi do decyzji managera." onClose={() => setModal(null)} actions={<><button onClick={() => setModal(null)}>Anuluj</button><button className="dialog-primary" disabled={!abDraft.from || !abDraft.to} onClick={wyslijAbsencje}><MessageSquare size={15} /> Wyślij wniosek</button></>}>
+        <div className="dialog-form-grid"><label className="dialog-field full">Rodzaj<select value={abDraft.type} onChange={(e) => setAbDraft((v) => ({ ...v, type: e.target.value }))}><option value="urlop">Urlop wypoczynkowy</option><option value="uz">Urlop na żądanie</option><option value="l4">Zwolnienie lekarskie</option><option value="inne">Inna nieobecność</option></select></label><label className="dialog-field">Od<input type="date" value={abDraft.from} onChange={(e) => setAbDraft((v) => ({ ...v, from: e.target.value }))} /></label><label className="dialog-field">Do<input type="date" value={abDraft.to} onChange={(e) => setAbDraft((v) => ({ ...v, to: e.target.value }))} /></label><label className="dialog-field full">Komentarz<textarea value={abDraft.note} onChange={(e) => setAbDraft((v) => ({ ...v, note: e.target.value }))} placeholder="Opcjonalna informacja dla managera" /></label></div>
+      </Dialog>}
+
+      {modal === 'about' && <Dialog title="ORDO Employee Hub" kicker="O APLIKACJI" description="Aplikacja pracownika ORDO Workforce Cloud." onClose={() => setModal(null)} size="small"><div className="dialog-notice"><Info size={16} /><span>Grafik, rejestracja czasu, dyspozycyjność, urlopy i giełda zamian. Wersja v8 · {DEFAULT_LOCATION}. © 2026 ORDO by M. Szewczyk.</span></div></Dialog>}
+    </main>
+  );
+};
+
 function REXCloudApp() {
   const [currentUser, setCurrentUser] = useState(() => loadFromStorage('rex_user', null));
   const [swaps, setSwaps] = useState([]);
@@ -768,25 +1073,19 @@ function REXCloudApp() {
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Sidebar isOpen={sidebar} onClose={() => setSidebar(false)} currentPage={page} onNavigate={setPage} user={currentUser} onLogout={handleLogout} />
-      <Header title={titles[page] || 'REX Cloud EMPLOYEE'} onMenuClick={() => setSidebar(true)} />
-      {loading ? (<div className="flex items-center justify-center py-20"><Cloud size={48} style={{color: colors.primary.medium}} className="animate-pulse" /></div>) : (<>
-        {page === 'home' && <HomePage nextShift={nextShift} onNavigateToShifts={() => setPage('shifts')} monthHours={monthHours} monthShiftCount={monthShifts.length} publikacje={publikacje} onConfirm={potwierdzGrafik} />}
-        {page === 'shifts' && <ShiftsPage date={date} onDateChange={setDate} shifts={shifts} onOpenTeam={openTeam} />}
-        {page === 'hours' && <HoursPage shifts={shifts} />}
-        {page === 'swaps' && <SwapsPage user={currentUser} shifts={shifts} swaps={swaps} onCreate={createSwap} onVolunteer={volunteerSwap} onUnvolunteer={unvolunteerSwap} onCancel={cancelSwap} onRefresh={() => { reloadShifts(); reloadSwaps(); }} />}
-        {page === 'dyspo' && <DyspoPage />}
-        {page === 'wnioski' && <WnioskiPage />}
-        {page === 'about' && <AboutPage />}
-      </>)}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 flex justify-around z-10">
-        {[['home', Home, 'Home'], ['shifts', Calendar, 'Grafik'], ['dyspo', CalendarCheck2, 'Dyspoz.'], ['swaps', RefreshCw, 'Zamiany'], ['wnioski', Briefcase, 'Urlopy']].map(([id, Icon, label]) => (
-          <button key={id} onClick={() => setPage(id)} className="flex flex-col items-center p-2" style={{color: page === id ? colors.primary.medium : '#94a3b8'}}><Icon size={24} /><span className="text-xs mt-1">{label}</span></button>
-        ))}
-      </div>
+    <>
+      <EhHub
+        user={currentUser}
+        shifts={shifts}
+        swaps={swaps}
+        publikacje={publikacje}
+        onConfirmGrafik={potwierdzGrafik}
+        onLogout={handleLogout}
+        openTeam={openTeam}
+        swapActions={{ create: createSwap, volunteer: volunteerSwap, unvolunteer: unvolunteerSwap, cancel: cancelSwap }}
+      />
       {teamDate && <CoworkersModal date={teamDate} list={coworkers} loading={coLoading} onClose={() => setTeamDate(null)} />}
-    </div>
+    </>
   );
 }
 
