@@ -12,15 +12,15 @@ const API_BASE = String(import.meta.env.VITE_API_BASE || 'https://rex-cloud-back
 const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
 
 const colors = {
-  primary: { darkest: '#3F0B1C', dark: '#741334', medium: '#A7465F', light: '#B86D82', bg: '#F0E4E8', bgLight: '#F3EFF0' },
-  accent: { dark: '#3F0B1C', medium: '#741334', light: '#A7465F', bg: '#F0E4E8' }
+  primary: { darkest: '#3F0B1C', dark: '#741334', medium: '#A7465F', light: '#B86D82', bg: '#F1E4E8', bgLight: '#F7F5F5' },
+  accent: { dark: '#3F0B1C', medium: '#741334', light: '#A7465F', bg: '#F1E4E8' }
 };
 
 // Station color palette (matches Excel matrix sections)
 const stationColors = {
-  'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#8E1B3C', 'KANAPKI / WRAPY': '#00A3E0',
+  'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#B94352', 'KANAPKI / WRAPY': '#00A3E0',
   'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#A7465F',
-  'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#A7465F', 'ZMYWAK': '#806D74',
+  'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#A7465F', 'ZMYWAK': '#71656A',
   'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#3F0B1C', 'MGR FUNKCYJNE': '#5A3542',
   'SZKOLENIA': '#a7465f', 'TRAINING': '#a7465f', 'INSTRUKTOR': '#00796B'
 };
@@ -96,8 +96,8 @@ const dfmtSw = (ds) => { const d = new Date(ds); const dni = ['nd','pn','wt','ś
 const opisZmiany = (s) => `${dfmtSw(s.date)} · ${s.station} · ${s.start}–${s.end} (${s.hours}h)`;
 const swapKey = (s) => s.date + '|' + s.station + '|' + s.start + '|' + s.end;
 const statusZamiany = (s) => {
-  if (s.status === 'approved') return { txt: `Zatwierdzona — przejmuje: ${s.approvedVolunteerDisplay || s.approvedVolunteer}`, kol: '#741334', bg: '#F0E4E8' };
-  if (s.status === 'rejected') return { txt: 'Odrzucona przez ASM', kol: '#8E1B3C', bg: '#F5E3E8' };
+  if (s.status === 'approved') return { txt: `Zatwierdzona — przejmuje: ${s.approvedVolunteerDisplay || s.approvedVolunteer}`, kol: '#741334', bg: '#F1E4E8' };
+  if (s.status === 'rejected') return { txt: 'Odrzucona przez ASM', kol: '#B94352', bg: '#F5E3E8' };
   if (s.status === 'cancelled') return { txt: 'Anulowana', kol: '#A38D95', bg: '#EDE3E6' };
   return s.volunteers.length ? { txt: `Zgłoszeń: ${s.volunteers.length} — czeka na akceptację ASM`, kol: '#A7465F', bg: '#fff2e8' } : { txt: 'Otwarta — czeka na chętnych', kol: colors.primary.medium, bg: colors.primary.bgLight };
 };
@@ -384,7 +384,7 @@ const HubClockCard = () => {
     else alert(r.error || 'Nie udało się zapisać zdarzenia');
   };
   const st = stan ? stan.state : null;
-  const chip = st === 'working' ? ['W pracy', '#741334', '#F0E4E8'] : st === 'break' ? ['Na przerwie', '#A7465F', '#F0E4E8'] : ['Poza zmianą', colors.primary.medium, colors.primary.bgLight];
+  const chip = st === 'working' ? ['W pracy', '#741334', '#F1E4E8'] : st === 'break' ? ['Na przerwie', '#A7465F', '#F1E4E8'] : ['Poza zmianą', colors.primary.medium, colors.primary.bgLight];
   const czasEv = (e) => new Date(e.at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
   const btn = (kol) => `w-full py-3.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50`;
   return (
@@ -399,10 +399,10 @@ const HubClockCard = () => {
       {st === 'working' && (
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <button disabled={busy} onClick={() => zdarzenie('break_start', 'unpaid')} className="py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: '#F0E4E8', color: '#A7465F' }}><Coffee size={17} /> Przerwa niepłatna</button>
+            <button disabled={busy} onClick={() => zdarzenie('break_start', 'unpaid')} className="py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: '#F1E4E8', color: '#A7465F' }}><Coffee size={17} /> Przerwa niepłatna</button>
             <button disabled={busy} onClick={() => zdarzenie('break_start', 'paid')} className="py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: colors.primary.bgLight, color: colors.primary.dark }}><Coffee size={17} /> Przerwa płatna</button>
           </div>
-          <button disabled={busy} onClick={() => zdarzenie('clock_out')} className={btn()} style={{ backgroundColor: '#8E1B3C' }}><LogOut size={18} /> Zakończ zmianę</button>
+          <button disabled={busy} onClick={() => zdarzenie('clock_out')} className={btn()} style={{ backgroundColor: '#B94352' }}><LogOut size={18} /> Zakończ zmianę</button>
         </div>
       )}
       {st === 'break' && <button disabled={busy} onClick={() => zdarzenie('break_end')} className={btn()} style={{ backgroundColor: colors.primary.medium }}><Coffee size={18} /> Wróć z przerwy</button>}
@@ -485,8 +485,8 @@ const DyspoPage = () => {
         <p>{okno ? `Dyspozycje zbieramy na ${mcNazwa}.` : 'Powiedz managerowi, kiedy możesz pracować.'} Dyspozycja nie zmienia automatycznie opublikowanego grafiku.</p>
       </section>
       {zamkniete && (
-        <div className="mobile-week-card" style={{ borderLeft: '4px solid #8E1B3C' }}>
-          <div className="mobile-deadline" style={{ color: '#8E1B3C' }}><Clock3 size={15} /><span><strong>Okno zamknięte.</strong> Termin składania dyspozycji na {mcNazwa} minął 20. dnia miesiąca. Otworzyć może je wyłącznie ASM.</span></div>
+        <div className="mobile-week-card" style={{ borderLeft: '4px solid #B94352' }}>
+          <div className="mobile-deadline" style={{ color: '#B94352' }}><Clock3 size={15} /><span><strong>Okno zamknięte.</strong> Termin składania dyspozycji na {mcNazwa} minął 20. dnia miesiąca. Otworzyć może je wyłącznie ASM.</span></div>
         </div>
       )}
       <section className="mobile-week-card">
@@ -545,7 +545,7 @@ const WnioskiPage = () => {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const TY = { urlop: 'Urlop wypoczynkowy', uz: 'Urlop na żądanie', l4: 'Zwolnienie (L4)', inne: 'Inna absencja' };
-  const ST = { open: ['Oczekuje', '#A7465F', '#F0E4E8'], approved: ['Zatwierdzony', '#741334', '#F0E4E8'], rejected: ['Odrzucony', '#8E1B3C', '#F5E3E8'], cancelled: ['Wycofany', '#A38D95', '#EDE3E6'] };
+  const ST = { open: ['Oczekuje', '#A7465F', '#F1E4E8'], approved: ['Zatwierdzony', '#741334', '#F1E4E8'], rejected: ['Odrzucony', '#B94352', '#F5E3E8'], cancelled: ['Wycofany', '#A38D95', '#EDE3E6'] };
   const zaladuj = () => { api('/absences').then((r) => { if (r.success) setLista(r.absences || []); }).catch(() => {}); };
   useEffect(zaladuj, []);
   const wyslij = async () => {
@@ -562,7 +562,7 @@ const WnioskiPage = () => {
     <div className="p-4 space-y-4 pb-24">
       <div className="bg-white rounded-2xl shadow-sm p-4">
         <h3 className="text-lg font-semibold mb-3">Nowy wniosek</h3>
-        {msg && <div className="p-2.5 rounded-lg mb-3 text-sm" style={{ backgroundColor: msg[0] === 'ok' ? '#F0E4E8' : '#F5E3E8', color: msg[0] === 'ok' ? '#741334' : '#8E1B3C' }}>{msg[1]}</div>}
+        {msg && <div className="p-2.5 rounded-lg mb-3 text-sm" style={{ backgroundColor: msg[0] === 'ok' ? '#F1E4E8' : '#F5E3E8', color: msg[0] === 'ok' ? '#741334' : '#B94352' }}>{msg[1]}</div>}
         <div className="space-y-3">
           <select value={typ} onChange={(e) => setTyp(e.target.value)} className={inp} style={{ borderColor: colors.primary.bg }}>{Object.entries(TY).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           <div className="flex gap-2">
@@ -585,7 +585,7 @@ const WnioskiPage = () => {
                 </div>
                 <p className="text-xs text-slate-500 mt-1">{a.from} → {a.to}{a.reason ? ` · ${a.reason}` : ''}</p>
                 {a.decidedBy && <p className="text-[11px] text-slate-400 mt-0.5">Decyzja: {a.decidedBy}</p>}
-                {a.status === 'open' && <button onClick={() => wycofaj(a)} className="text-xs mt-2 font-medium" style={{ color: '#8E1B3C' }}>Wycofaj wniosek</button>}
+                {a.status === 'open' && <button onClick={() => wycofaj(a)} className="text-xs mt-2 font-medium" style={{ color: '#B94352' }}>Wycofaj wniosek</button>}
               </div>
             ); })}
           </div>
@@ -791,7 +791,7 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
               <div key={s.id} className="rounded-xl p-3" style={{ backgroundColor: st.bg }}>
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-medium" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>
-                  {s.status === 'open' && <button onClick={() => onCancel(s.id)} className="text-xs px-2 py-1 rounded-lg shrink-0" style={{ backgroundColor: 'white', color: '#8E1B3C' }}>Anuluj</button>}
+                  {s.status === 'open' && <button onClick={() => onCancel(s.id)} className="text-xs px-2 py-1 rounded-lg shrink-0" style={{ backgroundColor: 'white', color: '#B94352' }}>Anuluj</button>}
                 </div>
                 <p className="text-xs mt-1 font-medium" style={{ color: st.kol }}>{st.txt}</p>
                 {s.status === 'open' && s.volunteers.length > 0 && <p className="text-xs mt-0.5 text-slate-500">Zgłoszeni: {(s.volunteersDisplay || s.volunteers.map(v => ({ display: v }))).map(v => v.display).join(', ')}</p>}
@@ -818,6 +818,8 @@ const EH_PUNCH = {
   break_end: { title: 'Zakończyć przerwę?', button: 'Wróć do pracy', note: 'Czas przerwy zostanie dopisany do dzisiejszej karty czasu.' },
   clock_out: { title: 'Zakończyć zmianę?', button: 'Potwierdź wyjście', note: 'Po wyjściu karta czasu trafi do rozliczenia.' },
 };
+
+const ehShiftTone = (st) => { const S = String(st || '').toUpperCase(); if (S.includes('KONTROLER')) return 'control'; if (S === 'MANAGER' || S === 'MGR FUNKCYJNE') return 'lead'; if (['SMAŻENIE', 'PANIEROWANIE', 'PREP', 'FRYTKI', 'ZMYWAK', 'BATTER'].includes(S)) return 'production'; return 'operations'; };
 
 const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, openTeam, swapActions }) => {
   const [tab, setTab] = useState('start');
@@ -956,10 +958,10 @@ const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, ope
             <article className="eh-card eh-month-calendar">
               <div className="eh-calendar-toolbar"><div><span>GRAFIK OPUBLIKOWANY</span><strong>{mcLabel(ym)}</strong></div><small><Users size={14} /> Dwuklik na zmianie = podgląd zespołu</small></div>
               <div className="eh-calendar-weekdays">{['PON', 'WT', 'ŚR', 'CZW', 'PT', 'SOB', 'ND'].map((d2) => <span key={d2}>{d2}</span>)}</div>
-              <div className="eh-calendar-grid">{kalDni.map((d2, i) => { const zs = d2 ? zmianyDnia(d2) : []; return <button key={i} disabled={!d2} className={`${d2 === selDay ? 'selected' : ''} ${zs.length ? 'has-shift' : ''} ${d2 === dzis ? 'today' : ''}`} onClick={() => d2 && setSelDay(d2)} onDoubleClick={() => d2 && zs.length && openTeam(d2)}><span>{d2 ? Number(d2.slice(8)) : ''}</span>{zs.slice(0, 1).map((z) => <i key={z.start}><strong>{z.start}–{z.end}</strong><small>{z.station}</small></i>)}{d2 === dzis && <em>DZIŚ</em>}</button>; })}</div>
+              <div className="eh-calendar-grid">{kalDni.map((d2, i) => { const zs = d2 ? zmianyDnia(d2) : []; return <button key={i} disabled={!d2} className={`${d2 === selDay ? 'selected' : ''} ${zs.length ? 'has-shift' : ''} ${d2 === dzis ? 'today' : ''}`} onClick={() => d2 && setSelDay(d2)} onDoubleClick={() => d2 && zs.length && openTeam(d2)}><span>{d2 ? Number(d2.slice(8)) : ''}</span>{zs.slice(0, 1).map((z) => <i key={z.start} className={`eh-shift-${ehShiftTone(z.station)}`}><strong>{z.start}–{z.end}</strong><small>{z.station}</small></i>)}{d2 === dzis && <em>DZIŚ</em>}</button>; })}</div>
             </article>
             <aside className="eh-month-side">
-              <article className="eh-card eh-day-detail"><div className="eh-card-head"><span>{Number(selDay.slice(8))} {mcLabel(selDay.slice(0, 7)).toUpperCase()}</span><em>{selShifts.length ? `${selShifts.length} ZMIANA` : 'WOLNE'}</em></div>{selShifts.length ? selShifts.map((z, i) => <div className="eh-selected-shift" key={i} onDoubleClick={() => openTeam(selDay)}><i><Calendar size={18} /></i><span><small>{nazwaStanowiska(z)}</small><strong>{z.start}–{z.end}</strong><em><MapPinIcon size={12} /> {DEFAULT_LOCATION}</em></span><b>{(z.hours != null ? z.hours : calcHours(z.start, z.end))} h</b><button onClick={() => openTeam(selDay)}><Users size={15} /> Zespół</button></div>) : <div className="eh-day-empty"><CalendarCheck2 size={22} /><strong>Brak zaplanowanej zmiany</strong><span>To Twój dzień wolny. W kalendarzu nie ma publikowanych godzin.</span></div>}<p className="eh-doubleclick-hint"><Users size={14} /> Dwuklik na kartę zmiany lub przycisk „Zespół" pokaże obsadę tego dnia.</p></article>
+              <article className="eh-card eh-day-detail"><div className="eh-card-head"><span>{Number(selDay.slice(8))} {mcLabel(selDay.slice(0, 7)).toUpperCase()}</span><em>{selShifts.length ? `${selShifts.length} ZMIANA` : 'WOLNE'}</em></div>{selShifts.length ? selShifts.map((z, i) => <div className={`eh-selected-shift eh-shift-${ehShiftTone(z.station)}`} key={i} onDoubleClick={() => openTeam(selDay)}><i><Calendar size={18} /></i><span><small>{nazwaStanowiska(z)}</small><strong>{z.start}–{z.end}</strong><em><MapPinIcon size={12} /> {DEFAULT_LOCATION}</em></span><b>{(z.hours != null ? z.hours : calcHours(z.start, z.end))} h</b><button onClick={() => openTeam(selDay)}><Users size={15} /> Zespół</button></div>) : <div className="eh-day-empty"><CalendarCheck2 size={22} /><strong>Brak zaplanowanej zmiany</strong><span>To Twój dzień wolny. W kalendarzu nie ma publikowanych godzin.</span></div>}<p className="eh-doubleclick-hint"><Users size={14} /> Dwuklik na kartę zmiany lub przycisk „Zespół" pokaże obsadę tego dnia.</p></article>
               {niepotw.length > 0 && <article className="eh-card eh-confirm-card"><i><CalendarCheck2 size={22} /></i><h2>Grafik opublikowany</h2><p>Potwierdź, że znasz godziny swoich zmian: {niepotw.map((x) => x.month).join(', ')}.</p><button onClick={() => onConfirmGrafik(niepotw[0].month)}>Potwierdź grafik</button></article>}
             </aside>
           </div>
