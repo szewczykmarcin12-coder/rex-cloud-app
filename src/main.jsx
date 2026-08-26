@@ -3,7 +3,7 @@ import './workrhythm-mobile.css';
 import './ordo-hub.css';
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, MessageSquare, Check, LogIn, Coffee, History, Bell, MapPin as MapPinIcon, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, ShieldCheck, MessageSquare, Check, LogIn, Coffee, History, Bell, MapPin as MapPinIcon, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 // ===================== CONFIG =====================
 const API_BASE = String(import.meta.env.VITE_API_BASE || 'https://rex-cloud-backend.vercel.app/api').replace(/\/$/, '');
@@ -180,6 +180,8 @@ const LoginScreen = ({ onLogin }) => {
           <div className="eh-login-logo"><b>ORDO</b><span>EMPLOYEE HUB</span></div>
           <small>TWÓJ DZIEŃ PRACY</small>
           <h2>Wszystko, czego potrzebujesz — zawsze pod ręką.</h2>
+          <p className="eh-login-hero-copy">Grafik, zespół, czas pracy i wnioski w jednym bezpiecznym miejscu.</p>
+          <div className="eh-login-hero-note"><ShieldCheck size={13} /> Bezpieczny dostęp pracowniczy</div>
         </div>
         {step === 'login' ? (
           <form className="eh-login-card" onSubmit={submit}>
@@ -199,7 +201,8 @@ const LoginScreen = ({ onLogin }) => {
               <button type="button" className="eh-login-forgot" onClick={resetHasla}>Nie pamiętam hasła</button>
             </div>
             <button type="submit" className="eh-login-submit" disabled={loading || !login.trim()}>{loading ? 'Logowanie…' : <>Zaloguj się <ArrowRight size={17} /></>}</button>
-            <p className="eh-login-note"><Check size={13} /> ORDO nie poprosi Cię o hasło poza tym ekranem.</p>
+            <p className="eh-login-note"><ShieldCheck size={13} /> Dane logowania są przesyłane bezpiecznym połączeniem.</p>
+            <div className="eh-login-foot">ORDO Employee Hub • {new Date().getFullYear()}</div>
           </form>
         ) : (
           <form className="eh-login-card" onSubmit={savePass}>
@@ -214,10 +217,10 @@ const LoginScreen = ({ onLogin }) => {
               <div className="eh-login-input"><Lock size={17} /><input type="password" inputMode="numeric" maxLength={8} value={np2} onChange={(e) => setNp2(e.target.value)} disabled={loading} /></div>
             </label>
             <button type="submit" className="eh-login-submit" disabled={loading}>{loading ? 'Zapisywanie…' : <>Zapisz i wejdź <ArrowRight size={17} /></>}</button>
-            <p className="eh-login-note"><Check size={13} /> PIN jest przechowywany wyłącznie jako bezpieczny skrót.</p>
+            <p className="eh-login-note"><ShieldCheck size={13} /> PIN jest przechowywany wyłącznie jako bezpieczny skrót.</p>
+            <div className="eh-login-foot">ORDO Employee Hub • {new Date().getFullYear()}</div>
           </form>
         )}
-        <div className="eh-login-foot">ORDO Employee Hub • 2026</div>
       </div>
     </div>
   );

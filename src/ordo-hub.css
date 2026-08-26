@@ -956,3 +956,24 @@ body,
 .eh-login-note { margin-top: 46px; display: flex; align-items: center; justify-content: center; gap: 7px; color: #806d74; font-size: 11px; }
 .eh-login-note svg { color: #a7465f; }
 .eh-login-foot { padding: 18px 30px 22px; color: #b7a2aa; font-size: 10.5px; }
+
+
+/* ═══ ekran logowania: karta dzielona na desktopie (1:1 ze wzorca) ═══ */
+.eh-login-hero-copy { margin: 10px 0 0; color: rgba(255,255,255,.72); font-size: 12.5px; line-height: 1.6; }
+.eh-login-hero-note { display: none; }
+.eh-login-foot { text-align: center; }
+
+@media (min-width: 760px) {
+  .eh-login { justify-content: center; padding: 34px; }
+  .eh-login-shell { flex-direction: row; width: min(920px, 100%); min-height: 560px; max-height: 640px; border-radius: 26px; overflow: hidden; box-shadow: 0 30px 80px rgba(63,11,28,.18); }
+  .eh-login-hero { flex: 0 0 45%; display: flex; flex-direction: column; padding: 42px 38px 30px; border-radius: 0; }
+  .eh-login-logo { align-self: flex-start; margin-bottom: 0; }
+  .eh-login-hero small { margin-top: auto; margin-bottom: 10px; }
+  .eh-login-hero h2 { font-size: 27px; max-width: 300px; }
+  .eh-login-hero-copy { margin-bottom: auto; max-width: 300px; }
+  .eh-login-hero-note { display: flex; align-items: center; gap: 7px; margin-top: 28px; color: rgba(255,255,255,.55); font-size: 10.5px; }
+  .eh-login-card { display: flex; flex-direction: column; justify-content: center; padding: 44px 56px; }
+  .eh-login-card h1 { font-size: 28px; }
+  .eh-login-note { margin-top: 20px; }
+  .eh-login-foot { padding: 14px 0 0; color: #b7a2aa; font-size: 10px; }
+}
