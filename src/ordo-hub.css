@@ -874,8 +874,8 @@ body,
 .eh-calendar-grid > button > i small { overflow:hidden;color:#52718a;font-size:6px;font-weight:750;text-overflow:ellipsis;white-space:nowrap }
 .eh-calendar-grid > button > i.eh-shift-lead { color:#43374f;border-color:#806d93;background:#e9e3f1 }
 .eh-calendar-grid > button > i.eh-shift-lead small { color:#665472 }
-.eh-calendar-grid > button > i.eh-shift-production { color:#603646;border-color:#b8748d;background:#f6e1e9 }
-.eh-calendar-grid > button > i.eh-shift-production small { color:#8a5368 }
+.eh-calendar-grid > button > i.eh-shift-production { color:#4b493a;border-color:#d2c98b;background:#f6f2c8 }
+.eh-calendar-grid > button > i.eh-shift-production small { color:#67613f }
 .eh-calendar-grid > button > i.eh-shift-control { color:#493d57;border-color:#8f7aa4;border-left-color:#741334;background:#eee9f5 }
 .eh-calendar-grid > button > em { position:absolute;right:7px;top:9px;color:#8c2949;font-size:5px;font-style:normal;font-weight:900;letter-spacing:.07em }
 .eh-month-side { display:grid;gap:12px }
@@ -883,8 +883,8 @@ body,
 .eh-selected-shift { margin-top:14px;padding:12px;display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:9px;border:1px solid #dfcbd1;border-radius:11px;background:#fbf5f7;cursor:default }
 .eh-selected-shift.eh-shift-operations { border-left:3px solid #6e98b8;background:#f5f9fc }
 .eh-selected-shift.eh-shift-operations > i { color:#294a61;background:#e2eef8 }
-.eh-selected-shift.eh-shift-production { border-left:3px solid #b8748d;background:#fdf7f9 }
-.eh-selected-shift.eh-shift-production > i { color:#603646;background:#f6e1e9 }
+.eh-selected-shift.eh-shift-production { border-left:3px solid #d2c98b;background:#fbfaed }
+.eh-selected-shift.eh-shift-production > i { color:#4b493a;background:#f6f2c8 }
 .eh-selected-shift.eh-shift-control { border-left:3px solid #741334;background:#faf8fc }
 .eh-selected-shift.eh-shift-control > i { color:#493d57;background:#eee9f5 }
 .eh-selected-shift.eh-shift-lead { border-left:3px solid #806d93;background:#f8f5fa }
