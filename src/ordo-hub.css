@@ -874,8 +874,8 @@ body,
 .eh-calendar-grid > button > i small { overflow:hidden;color:#52718a;font-size:6px;font-weight:750;text-overflow:ellipsis;white-space:nowrap }
 .eh-calendar-grid > button > i.eh-shift-lead { color:#43374f;border-color:#806d93;background:#e9e3f1 }
 .eh-calendar-grid > button > i.eh-shift-lead small { color:#665472 }
-.eh-calendar-grid > button > i.eh-shift-production { color:#4b493a;border-color:#d2c98b;background:#f6f2c8 }
-.eh-calendar-grid > button > i.eh-shift-production small { color:#67613f }
+.eh-calendar-grid > button > i.eh-shift-production { color:#603646;border-color:#b8748d;background:#f6e1e9 }
+.eh-calendar-grid > button > i.eh-shift-production small { color:#8a5368 }
 .eh-calendar-grid > button > i.eh-shift-control { color:#493d57;border-color:#8f7aa4;border-left-color:#741334;background:#eee9f5 }
 .eh-calendar-grid > button > em { position:absolute;right:7px;top:9px;color:#8c2949;font-size:5px;font-style:normal;font-weight:900;letter-spacing:.07em }
 .eh-month-side { display:grid;gap:12px }
@@ -883,8 +883,8 @@ body,
 .eh-selected-shift { margin-top:14px;padding:12px;display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:9px;border:1px solid #dfcbd1;border-radius:11px;background:#fbf5f7;cursor:default }
 .eh-selected-shift.eh-shift-operations { border-left:3px solid #6e98b8;background:#f5f9fc }
 .eh-selected-shift.eh-shift-operations > i { color:#294a61;background:#e2eef8 }
-.eh-selected-shift.eh-shift-production { border-left:3px solid #d2c98b;background:#fbfaed }
-.eh-selected-shift.eh-shift-production > i { color:#4b493a;background:#f6f2c8 }
+.eh-selected-shift.eh-shift-production { border-left:3px solid #b8748d;background:#fdf7f9 }
+.eh-selected-shift.eh-shift-production > i { color:#603646;background:#f6e1e9 }
 .eh-selected-shift.eh-shift-control { border-left:3px solid #741334;background:#faf8fc }
 .eh-selected-shift.eh-shift-control > i { color:#493d57;background:#eee9f5 }
 .eh-selected-shift.eh-shift-lead { border-left:3px solid #806d93;background:#f8f5fa }
@@ -992,3 +992,37 @@ body,
   .eh-login-note { margin-top: 20px; }
   .eh-login-foot { padding: 14px 0 0; color: #b7a2aa; font-size: 10px; }
 }
+
+/* ═══════════ ORDO v16 — tokeny i pastelowe rodziny zmian (srebro/antracyt) ═══════════ */
+:root, .workforce-view {
+  --ordo-maroon:#741334; --ordo-maroon-deep:#3F0B1C; --ordo-maroon-ink:#26030F;
+  --ordo-dusty-rose:#A7465F; --ordo-rose-050:#F1E4E8; --ordo-ink:#2B171E; --ordo-muted:#71656A;
+  --ordo-line:#E3DCDD; --ordo-canvas:#F7F5F5; --ordo-surface:#FFFFFF; --ordo-danger:#B94352;
+  --workforce-anthracite:#34383E; --workforce-silver:#C8CDD2; --workforce-canvas:#F4F5F6; --workforce-grid:#E4E7EA;
+  --shift-lead-bg:#E8E7ED; --shift-lead-border:#AAA6B2; --shift-lead-copy:#403F47;
+  --shift-operations-bg:#E3EBEF; --shift-operations-border:#96AAB5; --shift-operations-copy:#33464F;
+  --shift-production-bg:#EEE9EA; --shift-production-border:#B5A6AB; --shift-production-copy:#4D4246;
+  --shift-control-bg:#E7E9EB; --shift-control-border:#9DA4AA; --shift-control-copy:#3E4348;
+  --shift-off:#D5D9DD;
+  --actual-plan-bg:#E9ECEF; --actual-plan-border:#C3C9CF; --actual-performed-bg:#DFE9EE; --actual-performed-border:#91A8B5;
+  --actual-break-bg:#E9E6ED; --actual-break-border:#B9AFC4; --actual-exception-bg:#F0E6E8; --actual-exception-border:#C99FA8;
+  --focus-ring:0 0 0 3px rgba(116,19,52,.18);
+}
+
+/* Employee Hub: pastele zmian v16 w kalendarzu i karcie dnia */
+.eh-calendar-grid > button > i.eh-shift-lead { color:#403F47;border-color:#AAA6B2;background:#E8E7ED }
+.eh-calendar-grid > button > i.eh-shift-lead small { color:#5B5964 }
+.eh-calendar-grid > button > i.eh-shift-operations { color:#33464F;border-color:#96AAB5;background:#E3EBEF }
+.eh-calendar-grid > button > i.eh-shift-operations small { color:#54666F }
+.eh-calendar-grid > button > i.eh-shift-production { color:#4D4246;border-color:#B5A6AB;background:#EEE9EA }
+.eh-calendar-grid > button > i.eh-shift-production small { color:#6B5A60 }
+.eh-calendar-grid > button > i.eh-shift-control { color:#3E4348;border-color:#9DA4AA;background:#E7E9EB }
+.eh-calendar-grid > button > i.eh-shift-control small { color:#565B61 }
+.eh-selected-shift.eh-shift-lead { border-left-color:#AAA6B2;background:#F5F4F7 }
+.eh-selected-shift.eh-shift-lead > i { color:#403F47;background:#E8E7ED }
+.eh-selected-shift.eh-shift-operations { border-left-color:#96AAB5;background:#F3F7F9 }
+.eh-selected-shift.eh-shift-operations > i { color:#33464F;background:#E3EBEF }
+.eh-selected-shift.eh-shift-production { border-left-color:#B5A6AB;background:#F7F4F5 }
+.eh-selected-shift.eh-shift-production > i { color:#4D4246;background:#EEE9EA }
+.eh-selected-shift.eh-shift-control { border-left-color:#9DA4AA;background:#F4F5F6 }
+.eh-selected-shift.eh-shift-control > i { color:#3E4348;background:#E7E9EB }

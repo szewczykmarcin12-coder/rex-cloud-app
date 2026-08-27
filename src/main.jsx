@@ -1,7 +1,6 @@
 import './tailwind.css';
 import './workrhythm-mobile.css';
 import './ordo-hub.css';
-import './ordo-v16.css';
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, ShieldCheck, MessageSquare, Check, LogIn, Coffee, History, Bell, MapPin as MapPinIcon, ChevronDown, Eye, EyeOff } from 'lucide-react';
@@ -19,11 +18,11 @@ const colors = {
 
 // Station color palette (matches Excel matrix sections)
 const stationColors = {
-  'PANIEROWANIE': '#8E7C83', 'SMAŻENIE': '#927A83', 'KANAPKI / WRAPY': '#718997',
-  'KONTROLER': '#626A72', 'WSPARCIE WIECZORNE / FLEX': '#77727E', 'DISPATCHER': '#667F8C',
-  'PHU': '#6D8591', 'DESERY / NAPOJE': '#987E88', 'FRYTKI': '#907B82', 'ZMYWAK': '#737A80',
-  'PREP': '#88787E', 'DOSTAWA': '#6B818E', 'MANAGER': '#4E4C54', 'MGR FUNKCYJNE': '#65616C',
-  'SZKOLENIA': '#7B6F7D', 'TRAINING': '#7B6F7D', 'INSTRUKTOR': '#65616C'
+  'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#B94352', 'KANAPKI / WRAPY': '#00A3E0',
+  'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#A7465F',
+  'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#A7465F', 'ZMYWAK': '#71656A',
+  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#3F0B1C', 'MGR FUNKCYJNE': '#5A3542',
+  'SZKOLENIA': '#a7465f', 'TRAINING': '#a7465f', 'INSTRUKTOR': '#00796B'
 };
 const stationColor = (s) => stationColors[(s || '').toUpperCase()] || colors.primary.medium;
 const rolaSzk = (s) => {
@@ -83,11 +82,11 @@ const saveToStorage = (k, d) => { try { localStorage.setItem(k, JSON.stringify(d
 const loadFromStorage = (k, def = null) => { try { const d = localStorage.getItem(k); return d ? JSON.parse(d) : def; } catch { return def; } };
 const getTodayString = () => { const t = new Date(); return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); };
 
-// SEC-01: sesja jest utrzymywana przez bezpieczne ciasteczko HTTP-only.
-const obsluz401 = (r, path) => { if (r.status === 401 && !path.includes('action=session') && !path.includes('action=auth') && !path.includes('action=setpass')) window.dispatchEvent(new Event('ordo:session-expired')); return r; };
-const api = async (path) => { const r = obsluz401(await fetch(`${API_BASE}${path}`, { credentials: 'include' }), path); return r.json(); };
-const apiSend = async (path, method, body) => { const r = obsluz401(await fetch(`${API_BASE}${path}`, { method, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }), path); return r.json(); };
-const accountToUser = (a) => ({ id: a.id, name: a.grafikName || a.name, display: a.name, login: a.login });
+// SEC-01: każde wywołanie z tokenem sesji; 401 przy ważnym tokenie = wygaśnięcie → wylogowanie
+const authHeaders = () => { const t = loadFromStorage('rex_token', null); return t ? { Authorization: `Bearer ${t}` } : {}; };
+const obsluz401 = (r) => { if (r.status === 401 && loadFromStorage('rex_token', null)) { try { localStorage.removeItem('rex_token'); localStorage.removeItem('rex_user'); location.reload(); } catch {} } return r; };
+const api = async (path) => { const r = obsluz401(await fetch(`${API_BASE}${path}`, { headers: { ...authHeaders() } })); return r.json(); };
+const apiSend = async (path, method, body) => { const r = obsluz401(await fetch(`${API_BASE}${path}`, { method, headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: body ? JSON.stringify(body) : undefined })); return r.json(); };
 
 const normalizeName = (n) => (n || '').toString().trim().toUpperCase().replace(/\s+/g, ' ')
   .replace(/Ą/g,'A').replace(/Ć/g,'C').replace(/Ę/g,'E').replace(/Ł/g,'L').replace(/Ń/g,'N').replace(/Ó/g,'O').replace(/Ś/g,'S').replace(/Ź/g,'Z').replace(/Ż/g,'Z');
@@ -129,19 +128,22 @@ const LoginScreen = ({ onLogin }) => {
   const [np2, setNp2] = useState('');
 
   useEffect(() => { const z = loadFromStorage('rex_creds', null); if (z && z.login) setLogin(z.login); }, []);
+  const toUser = (a) => ({ id: a.id, name: a.grafikName || a.name, display: a.name, login: a.login });
+
   const submit = async (e) => {
     if (e) e.preventDefault();
     if (!login.trim() || !haslo) { setError('Podaj identyfikator i hasło'); return; }
     setLoading(true); setError(''); setInfo('');
     try {
-      const r = await apiSend('/accounts?action=auth', 'POST', { login: login.trim(), haslo, remember: zapamietaj });
+      const r = await apiSend('/accounts?action=auth', 'POST', { login: login.trim(), haslo });
       if (r.success) {
         if (r.account.mustChange) { setAcc(r.account); setStartowe(haslo); setStep('newpass'); }
         else {
-          const u = accountToUser(r.account);
+          const u = toUser(r.account);
           try { if (window.PasswordCredential && navigator.credentials) { navigator.credentials.store(new window.PasswordCredential({ id: login.trim(), password: haslo, name: u.display })); } } catch {}
+          if (r.token) saveToStorage('rex_token', r.token);
           if (zapamietaj) saveToStorage('rex_creds', { login: login.trim(), imie: u.display }); else { try { localStorage.removeItem('rex_creds'); } catch {} }
-          onLogin(u);
+          saveToStorage('rex_user', u); onLogin(u);
         }
       } else setError(r.error || 'Nieprawidłowy identyfikator lub hasło');
     } catch { setError('Błąd połączenia z serwerem'); }
@@ -153,11 +155,12 @@ const LoginScreen = ({ onLogin }) => {
     if (np1 !== np2) { setError('PIN-y nie są takie same'); return; }
     setLoading(true); setError('');
     try {
-      const r = await apiSend('/accounts?action=setpass', 'POST', { login: acc.login, oldHaslo: startowe, newPass: np1, remember: zapamietaj });
+      const r = await apiSend('/accounts?action=setpass', 'POST', { login: acc.login, oldHaslo: startowe, newPass: np1 });
       if (r.success) {
-        const u = accountToUser(acc);
+        const u = toUser(acc);
+        if (r.token) saveToStorage('rex_token', r.token);
         if (zapamietaj) saveToStorage('rex_creds', { login: acc.login, imie: u.display });
-        onLogin(u);
+        saveToStorage('rex_user', u); onLogin(u);
       } else setError(r.error || 'Nie udało się ustawić hasła');
     } catch { setError('Błąd połączenia z serwerem'); }
     setLoading(false);
@@ -364,7 +367,7 @@ const Dialog = ({ title, kicker, description, onClose, children, actions, size =
   );
 };
 
-// ═════════ ORDO Employee Hub — jedyny aktywny kanał rejestracji czasu ═════════
+// ═════════ ORDO Employee Hub — rejestracja czasu (zastępuje terminal REX Clock) ═════════
 const HUB_ETYKIETY = { clock_in: 'Wejście', break_start: 'Start przerwy', break_end: 'Koniec przerwy', clock_out: 'Wyjście' };
 const HubClockCard = () => {
   const [stan, setStan] = useState(null);
@@ -418,7 +421,7 @@ const HubClockCard = () => {
   );
 };
 
-// ═════════ ORDO Workforce — Dyspozycyjność (mobile) ═════════
+// ═════════ REX WorkRhythm Modules v1.0.0 — Dyspozycyjność (mobile) ═════════
 const DY_TYPES = [
   { id: 'available', title: 'Mogę pracować', detail: 'Cały dzień', icon: Check },
   { id: 'unavailable', title: 'Nie mogę pracować', detail: 'Cały dzień', icon: Ban },
@@ -477,7 +480,7 @@ const DyspoPage = () => {
   return (
     <div className="p-4 pb-24" style={{ maxWidth: 480, margin: '0 auto' }}>
       <section className="mobile-intro">
-        <span>WORKFORCE</span>
+        <span>WORKRHYTHM</span>
         <h1>Podaj dyspozycję</h1>
         <p>{okno ? `Dyspozycje zbieramy na ${mcNazwa}.` : 'Powiedz managerowi, kiedy możesz pracować.'} Dyspozycja nie zmienia automatycznie opublikowanego grafiku.</p>
       </section>
@@ -1029,9 +1032,8 @@ const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, ope
   );
 };
 
-function ORDOEmployeeHub() {
-  const [sessionReady, setSessionReady] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+function REXCloudApp() {
+  const [currentUser, setCurrentUser] = useState(() => loadFromStorage('rex_user', null));
   const [swaps, setSwaps] = useState([]);
   const [sidebar, setSidebar] = useState(false);
   const [page, setPage] = useState('home');
@@ -1042,16 +1044,6 @@ function ORDOEmployeeHub() {
   const [publikacje, setPublikacje] = useState([]);   // WFM-01: opublikowane miesiące + status potwierdzenia
   const [coworkers, setCoworkers] = useState([]);
   const [coLoading, setCoLoading] = useState(false);
-
-  useEffect(() => {
-    let live = true;
-    api('/accounts?action=session').then((r) => {
-      if (live && r.success && r.account) setCurrentUser(accountToUser(r.account));
-    }).finally(() => { if (live) setSessionReady(true); });
-    const expired = () => setCurrentUser(null);
-    window.addEventListener('ordo:session-expired', expired);
-    return () => { live = false; window.removeEventListener('ordo:session-expired', expired); };
-  }, []);
 
   const openTeam = async (dateStr) => {
     setTeamDate(dateStr); setCoworkers([]); setCoLoading(true);
@@ -1088,7 +1080,7 @@ function ORDOEmployeeHub() {
   const cancelSwap = async (id) => { const r = await apiSend('/swaps', 'PUT', { id, action: 'cancel' }); if (r.success) reloadSwaps(); };
 
   const handleLogin = (u) => setCurrentUser(u);
-  const handleLogout = async () => { try { await apiSend('/accounts?action=logout', 'POST', {}); } finally { setCurrentUser(null); setPage('home'); setShifts([]); setSwaps([]); } };
+  const handleLogout = () => { localStorage.removeItem('rex_user'); localStorage.removeItem('rex_token'); setCurrentUser(null); setPage('home'); setShifts([]); setSwaps([]); };
 
   const todayStr = getTodayString();
   const nextShift = shifts.filter(s => s.date >= todayStr).sort((a, b) => new Date(a.date) - new Date(b.date) || a.start.localeCompare(b.start))[0] || null;
@@ -1098,7 +1090,6 @@ function ORDOEmployeeHub() {
 
   const titles = { home: 'Strona domowa', shifts: 'Mój grafik', dyspo: 'Dyspozycyjność', hours: 'Moje godziny', swaps: 'Giełda zamian', wnioski: 'Urlopy i wnioski', about: 'O aplikacji' };
 
-  if (!sessionReady) return <div className="eh-session-loading"><span>ORDO</span><p>Bezpieczne otwieranie Employee Hub…</p></div>;
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
   return (
@@ -1118,4 +1109,4 @@ function ORDOEmployeeHub() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<ORDOEmployeeHub />);
+ReactDOM.createRoot(document.getElementById('root')).render(<REXCloudApp />);
