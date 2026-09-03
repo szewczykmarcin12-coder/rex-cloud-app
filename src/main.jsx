@@ -9,7 +9,7 @@ import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info
 const API_BASE = String(import.meta.env.VITE_API_BASE || 'https://rex-cloud-backend.vercel.app/api').replace(/\/$/, '');
 // ^ Zmień na URL swojego backendu po wdrożeniu
 
-const DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';
+let DEFAULT_LOCATION = 'Popeyes PLK Kraków Galeria Krakowska';   // nadpisywane z /api/org po zalogowaniu
 
 const colors = {
   primary: { darkest: '#3F0B1C', dark: '#741334', medium: '#A7465F', light: '#B86D82', bg: '#F1E4E8', bgLight: '#F7F5F5' },
@@ -840,6 +840,7 @@ const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, ope
   const pokaz = (m) => { setToast(m); setTimeout(() => setToast(''), 3600); };
 
   const zaladujHub = () => api('/clock?action=hub-state').then((r) => { if (r.success) setHub(r); }).catch(() => {});
+  useEffect(() => { api('/org').then((r) => { if (r && r.success && r.unit) DEFAULT_LOCATION = `${r.unit.brand} ${r.unit.code} ${r.unit.city} ${r.unit.name}`; }).catch(() => {}); }, []);
   const zaladujWnioski = () => {
     api('/availability?reqs=1').then((r) => { if (r.success) setDyspo(r.requests || []); }).catch(() => {});
     api('/absences').then((r) => { if (r.success) setAbsencje(r.absences || []); }).catch(() => {});

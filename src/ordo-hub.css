@@ -1026,3 +1026,18 @@ body,
 .eh-selected-shift.eh-shift-production > i { color:#4D4246;background:#EEE9EA }
 .eh-selected-shift.eh-shift-control { border-left-color:#9DA4AA;background:#F4F5F6 }
 .eh-selected-shift.eh-shift-control > i { color:#3E4348;background:#E7E9EB }
+
+
+/* ═══ v16.1 — nasycone rodziny zmian w kalendarzu Hub ═══ */
+.eh-calendar-grid > button > i.eh-shift-lead { color:#3E3760;border-color:#9C92BC;background:#E9E4F4 }
+.eh-calendar-grid > button > i.eh-shift-operations { color:#2B4A5F;border-color:#79A2C0;background:#DCEBF5 }
+.eh-calendar-grid > button > i.eh-shift-production { color:#5C5124;border-color:#C9B45E;background:#F8F1D2 }
+.eh-calendar-grid > button > i.eh-shift-control { color:#37415E;border-color:#8C9AC0;background:#E4E8F2 }
+.eh-selected-shift.eh-shift-lead { border-left-color:#9C92BC;background:#F6F3FA }
+.eh-selected-shift.eh-shift-lead > i { color:#3E3760;background:#E9E4F4 }
+.eh-selected-shift.eh-shift-operations { border-left-color:#79A2C0;background:#F1F7FB }
+.eh-selected-shift.eh-shift-operations > i { color:#2B4A5F;background:#DCEBF5 }
+.eh-selected-shift.eh-shift-production { border-left-color:#C9B45E;background:#FBF7E6 }
+.eh-selected-shift.eh-shift-production > i { color:#5C5124;background:#F8F1D2 }
+.eh-selected-shift.eh-shift-control { border-left-color:#8C9AC0;background:#F2F4F9 }
+.eh-selected-shift.eh-shift-control > i { color:#37415E;background:#E4E8F2 }
