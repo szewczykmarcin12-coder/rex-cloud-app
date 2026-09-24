@@ -834,6 +834,32 @@ const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, ope
   const [absencje, setAbsencje] = useState([]);
   const [okno, setOkno] = useState(null);
   const [avDraft, setAvDraft] = useState({ date: '', kind: 'available', time: '14:00' });
+  // planer miesiąca: data -> { kind, time, time2 }; pędzel = aktualnie wybrany wariant
+  const [planM, setPlanM] = useState({});
+  const [pedzel, setPedzel] = useState({ kind: 'available', time: '14:00', time2: '22:00' });
+  const [miesBusy, setMiesBusy] = useState(false);
+  const kindZ = (r) => r.type === 'available' ? { kind: 'available' } : r.type === 'unavailable' ? { kind: 'unavailable' } : r.type === 'from_time' ? { kind: 'from', time: r.startTime } : r.type === 'until_time' ? { kind: 'until', time: r.endTime } : { kind: 'window', time: r.startTime, time2: r.endTime };
+  useEffect(() => {
+    if (modal !== 'availability' || !okno) return;
+    const m = {};
+    (dyspo || []).filter((r) => r.date && r.date.slice(0, 7) === okno.targetMonth && r.status !== 'rejected').forEach((r) => { m[r.date] = { ...kindZ(r), status: r.status }; });
+    setPlanM(m);
+  }, [modal, okno && okno.targetMonth]);
+  const dniMiesiaca = okno ? (() => { const [y, m] = okno.targetMonth.split('-').map(Number); const n = new Date(y, m, 0).getDate(); return Array.from({ length: n }, (_, i) => `${okno.targetMonth}-${String(i + 1).padStart(2, '0')}`); })() : [];
+  const wiodacePuste = okno ? (new Date(okno.targetMonth + '-01T12:00:00').getDay() + 6) % 7 : 0;
+  const malujDzien = (d) => setPlanM((m) => { const cur = m[d]; if (cur && cur.kind === pedzel.kind && !cur.status) { const c = { ...m }; delete c[d]; return c; } return { ...m, [d]: { kind: pedzel.kind, time: pedzel.time, time2: pedzel.time2 } }; });
+  const malujWszystkie = () => setPlanM(Object.fromEntries(dniMiesiaca.map((d) => [d, { kind: pedzel.kind, time: pedzel.time, time2: pedzel.time2 }])));
+  const skrotDnia = (x) => !x ? '' : x.kind === 'available' ? '✓' : x.kind === 'unavailable' ? '✕' : x.kind === 'from' ? `od ${x.time}` : x.kind === 'until' ? `do ${x.time}` : `${x.time}–${x.time2}`;
+  const wyslijMiesiac = async () => {
+    const typMap = { available: 'available', unavailable: 'unavailable', from: 'from_time', until: 'until_time', window: 'specific_shift' };
+    const items = Object.entries(planM).filter(([, x]) => !x.status).map(([date, x]) => ({ date, type: typMap[x.kind], startTime: x.kind === 'from' || x.kind === 'window' ? x.time : undefined, endTime: x.kind === 'until' ? x.time : x.kind === 'window' ? x.time2 : undefined }));
+    if (!items.length) return pokaz('Zaznacz dni, dla których chcesz zgłosić dyspozycję.');
+    setMiesBusy(true);
+    const r = await apiSend('/availability?action=request-bulk', 'POST', { items });
+    setMiesBusy(false);
+    if (r.success) { setModal(null); zaladujWnioski(); pokaz(`Wysłano dyspozycję na ${r.dni} ${r.dni === 1 ? 'dzień' : 'dni'} — manager zobaczy ją w kolejce decyzji.`); }
+    else pokaz(r.error || 'Nie udało się wysłać dyspozycji');
+  };
   const [abDraft, setAbDraft] = useState({ type: 'urlop', from: '', to: '', note: '' });
   const [swapSel, setSwapSel] = useState('');
   const dzis = getTodayString();
@@ -904,7 +930,7 @@ const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, ope
   const mojeProsby = swaps.filter(mojaProsba).sort((a, b) => b.createdAt - a.createdAt);
   const zgloszony = (x) => x.volunteers.some((v) => normalizeName(v) === normalizeName(me));
   const przyszle = shifts.filter((x) => x.date >= dzis).sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
-  const DY_LBL = (r) => r.type === 'available' ? 'Dostępny · cały dzień' : r.type === 'unavailable' ? 'Niedostępny · cały dzień' : r.type === 'from_time' ? `Dostępny od ${r.startTime}` : r.type === 'until_time' ? `Dostępny do ${r.endTime}` : `Zmiana ${r.startTime}–${r.endTime}`;
+  const DY_LBL = (r) => r.type === 'available' ? 'Dostępny · cały dzień' : r.type === 'unavailable' ? 'Niedostępny · cały dzień' : r.type === 'from_time' ? `Dostępny od ${r.startTime}` : r.type === 'until_time' ? `Dostępny do ${r.endTime}` : `Pracuję ${r.startTime}–${r.endTime}`;
   const AB_LBL = { urlop: 'Urlop wypoczynkowy', uz: 'Urlop na żądanie', l4: 'Zwolnienie (L4)', inne: 'Inna absencja' };
   const ST_LBL = { pending: 'Do decyzji', open: 'Do decyzji', approved: 'Zatwierdzony', rejected: 'Odrzucony', cancelled: 'Wycofany' };
   const inicjaly = (user.display || user.name).split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
@@ -978,9 +1004,19 @@ const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, ope
           <div className="eh-page-heading"><div><span>SELF-SERVICE</span><h1>Wnioski i zmiany</h1><p>Dyspozycyjność, urlopy oraz giełda zamian w jednym miejscu.</p></div><button className="eh-primary" onClick={() => setModal('absence')}><MessageSquare size={16} /> Nowy wniosek</button></div>
           <section className="eh-request-grid">
             <article className="eh-card eh-open-shift"><div className="eh-card-head"><span>GIEŁDA ZAMIAN</span><em>{otwarteInnych.length} otwartych</em></div>
-              {otwarteInnych.slice(0, 2).map((x) => <div key={x.id}><i><span>{new Intl.DateTimeFormat('pl-PL', { weekday: 'short' }).format(new Date(x.shift.date + 'T12:00:00')).replace('.', '').toUpperCase()}</span><strong>{Number(x.shift.date.slice(8))}</strong><small>{mcLabel(x.shift.date.slice(0, 7)).split(' ')[0].toUpperCase()}</small></i><span><small>{x.shift.station} · {x.requesterDisplay || x.requester}</small><strong>{x.shift.start}–{x.shift.end}</strong><em>{x.shift.hours} h{x.note ? ` · „${x.note}"` : ''}</em></span></div>)}
-              {otwarteInnych[0] ? <p><Lock size={15} /> Zgłoszenie wymaga akceptacji managera — zamiana przypisze zmianę do Twojego konta.</p> : null}
-              {otwarteInnych[0] ? (zgloszony(otwarteInnych[0]) ? <button onClick={() => swapActions.unvolunteer(otwarteInnych[0].id)}>Wycofaj zgłoszenie</button> : <button onClick={() => swapActions.volunteer(otwarteInnych[0].id)}>Zgłoś się po zmianę</button>) : <div className="eh-empty"><RefreshCw size={20} /><span>Brak otwartych ofert. Możesz wystawić własną zmianę poniżej.</span></div>}
+              <div className="eh-swap-list">
+                {otwarteInnych.length === 0 && <div className="eh-empty"><RefreshCw size={20} /><span>Brak otwartych ofert. Możesz wystawić własną zmianę poniżej.</span></div>}
+                {otwarteInnych.map((x) => { const moje = zgloszony(x); const kol = przyszle.some((z) => z.date === x.shift.date); return (
+                  <div className={`eh-swap-offer${moje ? ' mine' : ''}`} key={x.id}>
+                    <i><span>{new Intl.DateTimeFormat('pl-PL', { weekday: 'short' }).format(new Date(x.shift.date + 'T12:00:00')).replace('.', '').toUpperCase()}</span><strong>{Number(x.shift.date.slice(8))}</strong><small>{mcLabel(x.shift.date.slice(0, 7)).split(' ')[0].toUpperCase()}</small></i>
+                    <span><small>{x.shift.station} · {x.requesterDisplay || x.requester}</small><strong>{x.shift.start}–{x.shift.end}</strong><em>{x.shift.hours} h{x.note ? ` · „${x.note}"` : ''}{x.volunteers && x.volunteers.length ? ` · zgłoszeń: ${x.volunteers.length}` : ''}{kol ? ' · masz już zmianę tego dnia' : ''}</em></span>
+                    {moje
+                      ? <button type="button" className="eh-swap-btn secondary" onClick={() => swapActions.unvolunteer(x.id)}>Wycofaj</button>
+                      : <button type="button" className="eh-swap-btn" onClick={() => swapActions.volunteer(x.id)}>Zgłoś się</button>}
+                  </div>
+                ); })}
+              </div>
+              {otwarteInnych.length > 0 && <p><Lock size={15} /> Zgłoszenie wymaga akceptacji managera — zamiana przypisze zmianę do Twojego konta. Możesz zgłosić się do kilku ofert.</p>}
               {przyszle.length > 0 && <div style={{ marginTop: 10, display: 'flex', gap: 8 }}><select value={swapSel} onChange={(e) => setSwapSel(e.target.value)} style={{ flex: 1, padding: '8px 10px', borderRadius: 10, border: '1px solid var(--eh-line)', fontSize: 12 }}><option value="">— wystaw moją zmianę —</option>{przyszle.map((z, i) => <option key={i} value={`${z.date}|${z.start}|${z.end}|${z.station}`}>{z.date} · {z.start}–{z.end} · {z.station}</option>)}</select><button className="eh-primary" style={{ height: 38 }} disabled={!swapSel} onClick={() => { const cz = swapSel.split('|'); const z = przyszle.find((x2) => x2.date === cz[0] && x2.start === cz[1] && x2.end === cz[2]); swapActions.create({ date: cz[0], start: cz[1], end: cz[2], station: cz[3], hours: z && z.hours }, ''); setSwapSel(''); }}>Wystaw</button></div>}
             </article>
             <article className="eh-card eh-my-requests"><div className="eh-card-head"><span>MOJE WNIOSKI</span><button onClick={() => setModal('availability')}><CalendarCheck2 size={13} /> Dodaj dyspozycyjność</button></div>
@@ -1014,14 +1050,34 @@ const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, ope
         <div className="dialog-notice"><Lock size={16} /><span>{EH_PUNCH[pending].note}</span></div>
       </Dialog>}
 
-      {modal === 'availability' && <Dialog title="Nowa dyspozycyjność" kicker="DZIEŃ PO DNIU" description={okno ? `Dyspozycje zbieramy na ${new Intl.DateTimeFormat('pl-PL', { month: 'long', year: 'numeric' }).format(new Date(okno.targetMonth + '-01T12:00:00'))}${okno.otwarte ? ` · do 20.${okno.deadline.slice(5, 7)}` : ' · OKNO ZAMKNIĘTE'}.` : 'Wybierz datę i określ, kiedy możesz pracować.'} onClose={() => setModal(null)} actions={<><button onClick={() => setModal(null)}>Anuluj</button><button className="dialog-primary" disabled={!avDraft.date || (okno && !okno.otwarte)} onClick={wyslijDyspo}><MessageSquare size={15} /> Wyślij dyspozycyjność</button></>}>
-        <div className="eh-availability-form">
-          <label className="dialog-field eh-availability-date">Data dnia<input type="date" value={avDraft.date} min={okno ? `${okno.targetMonth}-01` : undefined} max={okno ? `${okno.targetMonth}-31` : undefined} onChange={(e) => setAvDraft((v) => ({ ...v, date: e.target.value }))} /></label>
-          <div className="eh-availability-label"><span>Dyspozycja</span><small>Wybierz jeden wariant dla wskazanego dnia</small></div>
-          <div className="eh-availability-options">{[['available', 'Dostępny', 'Mogę pracować przez cały dzień', Check], ['unavailable', 'Niedostępny', 'Nie mogę przyjąć zmiany', X], ['from', 'Dostępny od', 'Mogę rozpocząć od wskazanej godziny', Clock3], ['until', 'Dostępny do', 'Mogę pracować do wskazanej godziny', Clock3]].map(([id, label, copy, Icon]) => <button type="button" key={id} className={avDraft.kind === id ? 'active' : ''} onClick={() => setAvDraft((v) => ({ ...v, kind: id }))}><i><Icon size={16} /></i><span><strong>{label}</strong><small>{copy}</small></span>{avDraft.kind === id && <Check size={15} />}</button>)}</div>
-          {(avDraft.kind === 'from' || avDraft.kind === 'until') && <label className="dialog-field eh-availability-time">{avDraft.kind === 'from' ? 'Dostępny od godziny' : 'Dostępny do godziny'}<input autoFocus type="time" value={avDraft.time} onChange={(e) => setAvDraft((v) => ({ ...v, time: e.target.value }))} /></label>}
+      {modal === 'availability' && <Dialog title="Dyspozycyjność na miesiąc" kicker="PLANER MIESIĄCA" description={okno ? `Dyspozycje zbieramy na ${new Intl.DateTimeFormat('pl-PL', { month: 'long', year: 'numeric' }).format(new Date(okno.targetMonth + '-01T12:00:00'))}${okno.otwarte ? ` · do 20.${okno.deadline.slice(5, 7)}` : ' · OKNO ZAMKNIĘTE'}. Wybierz wariant i klikaj dni — możesz zgłosić cały miesiąc naraz.` : 'Wybierz wariant i zaznacz dni.'} onClose={() => setModal(null)} actions={<><button onClick={() => setModal(null)}>Anuluj</button><button className="dialog-primary" disabled={miesBusy || (okno && !okno.otwarte) || !Object.values(planM).some((x) => !x.status)} onClick={wyslijMiesiac}><MessageSquare size={15} /> {miesBusy ? 'Wysyłam…' : `Wyślij (${Object.values(planM).filter((x) => !x.status).length} dni)`}</button></>}>
+        <div className="eh-dyspo-brush">
+          {[['available', 'Dostępny', 'ok'], ['unavailable', 'Niedostępny', 'no'], ['from', 'Od godziny', 'part'], ['until', 'Do godziny', 'part'], ['window', 'Pracuję od–do', 'win']].map(([k, l, cls]) => (
+            <button type="button" key={k} className={`eh-dyspo-brush-btn ${cls}${pedzel.kind === k ? ' active' : ''}`} onClick={() => setPedzel((p2) => ({ ...p2, kind: k }))}>{l}</button>
+          ))}
         </div>
-        <div className="dialog-notice" style={{ marginTop: 14 }}><Info size={16} /><span>Każda data ma osobny wpis. Ponowne wysłanie dla tego samego dnia zastąpi wcześniejszą dyspozycyjność.</span></div>
+        {(pedzel.kind === 'from' || pedzel.kind === 'until' || pedzel.kind === 'window') && (
+          <div className="eh-dyspo-times">
+            {pedzel.kind !== 'until' && <label className="dialog-field">{pedzel.kind === 'window' ? 'Od' : 'Dostępny od'}<input type="time" value={pedzel.time} onChange={(e) => setPedzel((p2) => ({ ...p2, time: e.target.value }))} /></label>}
+            {pedzel.kind !== 'from' && <label className="dialog-field">{pedzel.kind === 'window' ? 'Do' : 'Dostępny do'}<input type="time" value={pedzel.kind === 'until' ? pedzel.time : pedzel.time2} onChange={(e) => setPedzel((p2) => pedzel.kind === 'until' ? { ...p2, time: e.target.value } : { ...p2, time2: e.target.value })} /></label>}
+            <small>Godziny zapisują się przy klikaniu dni — ustaw je przed zaznaczeniem.</small>
+          </div>
+        )}
+        <div className="eh-dyspo-tools">
+          <button type="button" onClick={malujWszystkie}>Zaznacz cały miesiąc</button>
+          <button type="button" onClick={() => setPlanM((m) => Object.fromEntries(Object.entries(m).filter(([, x]) => x.status)))}>Wyczyść nowe</button>
+          <span>{Object.values(planM).filter((x) => !x.status).length} do wysłania · {Object.values(planM).filter((x) => x.status).length} już zgłoszonych</span>
+        </div>
+        <div className="eh-dyspo-weekdays">{['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map((d) => <span key={d}>{d}</span>)}</div>
+        <div className="eh-dyspo-grid">
+          {Array.from({ length: wiodacePuste }, (_, i) => <i key={`p${i}`} />)}
+          {dniMiesiaca.map((d, i) => { const x = planM[d]; const cls = !x ? '' : x.kind === 'available' ? 'ok' : x.kind === 'unavailable' ? 'no' : x.kind === 'window' ? 'win' : 'part'; return (
+            <button type="button" key={d} className={`eh-dyspo-day ${cls}${x && x.status ? ` ${x.status}` : ''}${(i + wiodacePuste) % 7 >= 5 ? ' weekend' : ''}`} title={x ? `${skrotDnia(x)}${x.status ? ` · ${x.status === 'approved' ? 'zatwierdzona' : 'oczekuje'} — kliknij, aby zastąpić` : ''}` : 'kliknij, aby zaznaczyć'} onClick={() => malujDzien(d)}>
+              <strong>{i + 1}</strong><small>{skrotDnia(x)}</small>
+            </button>
+          ); })}
+        </div>
+        <div className="dialog-notice" style={{ marginTop: 12 }}><Info size={16} /><span>Ponowne kliknięcie tym samym wariantem usuwa zaznaczenie. Dni już zgłoszone (obwódka) można nadpisać — nowy wpis zastąpi poprzedni po wysłaniu.</span></div>
       </Dialog>}
 
       {modal === 'absence' && <Dialog title="Nowy wniosek o nieobecność" kicker="EMPLOYEE SELF-SERVICE" description="Wniosek trafi do decyzji managera." onClose={() => setModal(null)} actions={<><button onClick={() => setModal(null)}>Anuluj</button><button className="dialog-primary" disabled={!abDraft.from || !abDraft.to} onClick={wyslijAbsencje}><MessageSquare size={15} /> Wyślij wniosek</button></>}>

@@ -1041,3 +1041,46 @@ body,
 .eh-selected-shift.eh-shift-production > i { color:#5C5124;background:#F8F1D2 }
 .eh-selected-shift.eh-shift-control { border-left-color:#8C9AC0;background:#F2F4F9 }
 .eh-selected-shift.eh-shift-control > i { color:#37415E;background:#E4E8F2 }
+
+
+/* ═══ Giełda zamian: pełna lista ofert z akcją per oferta ═══ */
+.eh-open-shift > div:nth-child(2) { min-height:0;display:block }
+.eh-swap-list { display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;padding-right:2px }
+.eh-swap-offer { display:grid;grid-template-columns:56px 1fr auto;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--eh-line,#E3DCDD);border-radius:12px;background:#fff }
+.eh-swap-offer.mine { border-color:#96AAB5;background:#F1F7FB }
+.eh-swap-offer > i { width:56px;height:64px;display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:11px;color:#741334;background:#F1E4E8;font-style:normal }
+.eh-swap-offer > i span,.eh-swap-offer > i small { font-size:7px;font-weight:800 }
+.eh-swap-offer > i strong { font-size:21px;line-height:1.05 }
+.eh-swap-offer > span { min-width:0;display:flex;flex-direction:column;gap:3px }
+.eh-swap-offer > span small { color:#71656A;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em }
+.eh-swap-offer > span strong { font-size:13px;color:#2B171E }
+.eh-swap-offer > span em { color:#71656A;font-size:9px;font-style:normal }
+.eh-swap-btn { min-height:36px;padding:0 12px;border:0;border-radius:9px;color:#fff;background:#741334;font-size:9px;font-weight:800;cursor:pointer;white-space:nowrap }
+.eh-swap-btn.secondary { color:#741334;background:#F1E4E8 }
+@media (max-width: 480px) { .eh-swap-offer { grid-template-columns:48px 1fr;grid-template-rows:auto auto } .eh-swap-offer > i { width:48px;height:56px } .eh-swap-btn { grid-column:1 / -1;width:100% } }
+
+
+/* ═══ Planer dyspozycji na miesiąc ═══ */
+.eh-dyspo-brush { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px }
+.eh-dyspo-brush-btn { min-height:34px;padding:0 12px;border:1px solid var(--eh-line,#E3DCDD);border-radius:9px;background:#fff;color:#2B171E;font-size:11px;font-weight:700;cursor:pointer }
+.eh-dyspo-brush-btn.active.ok { color:#33464F;border-color:#96AAB5;background:#E3EBEF }
+.eh-dyspo-brush-btn.active.no { color:#743647;border-color:#C99FA8;background:#F0E6E8 }
+.eh-dyspo-brush-btn.active.part { color:#5C5124;border-color:#C9B45E;background:#F8F1D2 }
+.eh-dyspo-brush-btn.active.win { color:#3E3760;border-color:#9C92BC;background:#E9E4F4 }
+.eh-dyspo-times { display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;margin-bottom:8px }
+.eh-dyspo-times small { grid-column:1 / -1;color:#71656A;font-size:10px }
+.eh-dyspo-tools { display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 10px;font-size:11px;color:#71656A }
+.eh-dyspo-tools button { min-height:30px;padding:0 10px;border:1px solid var(--eh-line,#E3DCDD);border-radius:8px;background:#fff;color:#741334;font-size:10.5px;font-weight:700;cursor:pointer }
+.eh-dyspo-weekdays { display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;text-align:center;color:#71656A;font-size:9px;font-weight:800;letter-spacing:.06em }
+.eh-dyspo-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:4px }
+.eh-dyspo-grid > i { min-height:44px }
+.eh-dyspo-day { min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px solid var(--eh-line,#E3DCDD);border-radius:9px;background:#fff;color:#2B171E;cursor:pointer;padding:2px }
+.eh-dyspo-day strong { font-size:12px }
+.eh-dyspo-day small { font-size:8px;font-weight:700;line-height:1.1;text-align:center }
+.eh-dyspo-day.weekend { background:#FBFAFA }
+.eh-dyspo-day.ok { color:#33464F;border-color:#96AAB5;background:#E3EBEF }
+.eh-dyspo-day.no { color:#743647;border-color:#C99FA8;background:#F0E6E8 }
+.eh-dyspo-day.part { color:#5C5124;border-color:#C9B45E;background:#F8F1D2 }
+.eh-dyspo-day.win { color:#3E3760;border-color:#9C92BC;background:#E9E4F4 }
+.eh-dyspo-day.pending,.eh-dyspo-day.approved { box-shadow:inset 0 0 0 2px #741334 }
+.eh-dyspo-day.approved { box-shadow:inset 0 0 0 2px #96AAB5 }
