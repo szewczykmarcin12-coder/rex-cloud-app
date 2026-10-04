@@ -1091,3 +1091,12 @@ body, button, input, select, textarea { font-family: Inter, "Segoe UI", Roboto, 
 small, .text-xs, .text-\[9px\], .text-\[9\.5px\], .text-\[10px\], .text-\[10\.5px\], .text-\[11px\] { font-size: 11.5px !important; }
 .text-\[13px\], .text-sm { font-size: 13.5px !important; }
 strong, b, .metric-card strong, .dialog-stat strong, .mini-metric > strong { font-feature-settings: "ss01" 1, "tnum" 1; }
+
+/* ═══ v12.4: spójna skala po powiększeniu (Employee Hub) — telefon 360–414 px bez zawijania etykiet ═══ */
+.eh-mobile-nav button { font-size: 10.5px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; }
+.eh-login-remember, .eh-login-forgot, .eh-login-info, .eh-login-foot, .eh-login-hero-copy { font-size: 13px; } .eh-login-submit, .eh-login-note { font-size: 14px; }
+.eh-dyspo-brush-btn, .eh-dyspo-tools { font-size: 12.5px; }
+.score-chip, .eh-swap-offer > i span, .eh-swap-offer > i small, .dyspo-tag, .request-status, .status-ready, .status-warning { font-size: 10.5px; white-space: nowrap; }
+small { font-size: 10.5px !important; } .text-xs, .text-\[10px\], .text-\[11px\] { font-size: 11px !important; } .text-sm { font-size: 13px !important; }
+.sidebar nav button span, .sidebar-bottom > button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar nav button, .sidebar-bottom > button { font-size: 13px; }
