@@ -482,7 +482,7 @@ const DyspoPage = () => {
   return (
     <div className="p-4 pb-24" style={{ maxWidth: 480, margin: '0 auto' }}>
       <section className="mobile-intro">
-        <span>WORKRHYTHM</span>
+        <span>DYSPOZYCYJNOŚĆ</span>
         <h1>Podaj dyspozycję</h1>
         <p>{okno ? `Dyspozycje zbieramy na ${mcNazwa}.` : 'Powiedz managerowi, kiedy możesz pracować.'} Dyspozycja nie zmienia automatycznie opublikowanego grafiku.</p>
       </section>
@@ -1003,7 +1003,7 @@ const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, ope
         </section>}
 
         {tab === 'requests' && <section className="eh-page">
-          <div className="eh-page-heading"><div><span>SELF-SERVICE</span><h1>Wnioski i zmiany</h1><p>Dyspozycyjność, urlopy oraz giełda zamian w jednym miejscu.</p></div><button className="eh-primary" onClick={() => setModal('absence')}><MessageSquare size={16} /> Nowy wniosek</button></div>
+          <div className="eh-page-heading"><div><span>WNIOSKI</span><h1>Wnioski i zmiany</h1><p>Dyspozycyjność, urlopy oraz giełda zamian w jednym miejscu.</p></div><button className="eh-primary" onClick={() => setModal('absence')}><MessageSquare size={16} /> Nowy wniosek</button></div>
           <section className="eh-request-grid">
             <article className="eh-card eh-open-shift"><div className="eh-card-head"><span>GIEŁDA ZAMIAN</span><em>{otwarteInnych.length} otwartych</em></div>
               <div className="eh-swap-list">
@@ -1082,7 +1082,7 @@ const EhHub = ({ user, shifts, swaps, publikacje, onConfirmGrafik, onLogout, ope
         <div className="dialog-notice" style={{ marginTop: 12 }}><Info size={16} /><span>Ponowne kliknięcie tym samym wariantem usuwa zaznaczenie. Dni już zgłoszone (obwódka) można nadpisać — nowy wpis zastąpi poprzedni po wysłaniu.</span></div>
       </Dialog>}
 
-      {modal === 'absence' && <Dialog title="Nowy wniosek o nieobecność" kicker="EMPLOYEE SELF-SERVICE" description="Wniosek trafi do decyzji managera." onClose={() => setModal(null)} actions={<><button onClick={() => setModal(null)}>Anuluj</button><button className="dialog-primary" disabled={!abDraft.from || !abDraft.to} onClick={wyslijAbsencje}><MessageSquare size={15} /> Wyślij wniosek</button></>}>
+      {modal === 'absence' && <Dialog title="Nowy wniosek o nieobecność" kicker="WNIOSKI" description="Wniosek trafi do decyzji managera." onClose={() => setModal(null)} actions={<><button onClick={() => setModal(null)}>Anuluj</button><button className="dialog-primary" disabled={!abDraft.from || !abDraft.to} onClick={wyslijAbsencje}><MessageSquare size={15} /> Wyślij wniosek</button></>}>
         <div className="dialog-form-grid"><label className="dialog-field full">Rodzaj<select value={abDraft.type} onChange={(e) => setAbDraft((v) => ({ ...v, type: e.target.value }))}><option value="urlop">Urlop wypoczynkowy</option><option value="uz">Urlop na żądanie</option><option value="l4">Zwolnienie lekarskie</option><option value="inne">Inna nieobecność</option></select></label><label className="dialog-field">Od<input type="date" value={abDraft.from} onChange={(e) => setAbDraft((v) => ({ ...v, from: e.target.value }))} /></label><label className="dialog-field">Do<input type="date" value={abDraft.to} onChange={(e) => setAbDraft((v) => ({ ...v, to: e.target.value }))} /></label><label className="dialog-field full">Komentarz<textarea value={abDraft.note} onChange={(e) => setAbDraft((v) => ({ ...v, note: e.target.value }))} placeholder="Opcjonalna informacja dla managera" /></label></div>
       </Dialog>}
 
