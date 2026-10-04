@@ -1089,3 +1089,30 @@ body,
 body, button, input, select, textarea { font-family: Inter, "Segoe UI", Roboto, Arial, Helvetica, sans-serif; font-feature-settings: "ss01" 1, "tnum" 1, "cv11" 1; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 .eh-mobile-nav button { font-size: 10.5px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; }
 .sidebar nav button span, .sidebar-bottom > button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── v12.8: logowanie Employee Hub — na telefonie karta jak w projekcie (tło z łukami, logo w karcie, duże „Zaloguj się”) ── */
+.eh-login-logo-card { display: none; }
+@media (max-width: 899px) {
+  .eh-login { position: relative; overflow: hidden; justify-content: center; min-height: 100dvh; padding: 24px 16px; background: #f4eef0; }
+  .eh-login::before, .eh-login::after { content: ''; position: absolute; border-radius: 50%; background: #ecd9df; opacity: .75; pointer-events: none; z-index: 0; }
+  .eh-login::before { width: 120vw; height: 120vw; right: -45vw; top: -70vw; } .eh-login::after { width: 110vw; height: 110vw; left: -55vw; bottom: -75vw; }
+  .eh-login-shell { position: relative; z-index: 1; width: 100%; max-width: 440px; min-height: 0; border-radius: 28px; overflow: hidden; box-shadow: 0 24px 60px rgba(63,11,28,.14); }
+  .eh-login-hero { display: none; }
+  .eh-login-card { padding: 40px 28px 34px; }
+  .eh-login-logo-card { display: flex; align-items: flex-start; margin: 0 0 30px; }
+  .eh-login-logo-card b { color: #741334; font-size: 38px; font-weight: 900; letter-spacing: .26em; line-height: 1; }
+  .eh-login-logo-card span { margin-top: 8px; color: #6e5a62; font-size: 12px; font-weight: 800; letter-spacing: .3em; }
+  .eh-login-card > small, .eh-login-card > p:not(.eh-login-note) { display: none; }
+  .eh-login-card h1 { margin: 0 0 24px; font-size: 36px; font-weight: 700; letter-spacing: -.02em; color: #231318; }
+  .eh-login-field { margin-bottom: 18px; } .eh-login-field > span { margin-bottom: 8px; font-size: 15px; font-weight: 800; color: #1f1216; }
+  .eh-login-input { gap: 12px; padding: 0 16px; border: 1.5px solid #e4dadd; border-radius: 14px; } .eh-login-input svg { width: 20px; height: 20px; color: #6e5a62; }
+  .eh-login-input input { height: 54px; font-size: 15px; } .eh-login-input input::placeholder { color: #9a8a90; }
+  .eh-login-row { margin: 6px 0 24px; gap: 8px; } .eh-login-remember { gap: 9px; font-size: 13px; color: #5b4a51; } .eh-login-remember input { width: 20px; height: 20px; } .eh-login-forgot { font-size: 13px; margin-left: auto; }
+  .eh-login-submit { height: 58px; border-radius: 16px; font-size: 17px; font-weight: 700; box-shadow: 0 8px 18px rgba(116,19,52,.2); }
+  .eh-login-note { margin: 32px 0 0; justify-content: flex-start; align-items: flex-start; gap: 10px; color: #5b4a51; font-size: 13.5px; line-height: 1.45; text-align: left; }
+  .eh-login-note svg { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px; color: #741334; }
+  .eh-login-foot { display: none; }
+}
+
+@media (max-width: 899px) { .eh-login-forgot { white-space: nowrap; } .eh-login-row { gap: 10px; flex-wrap: wrap; } }
+@media (max-width: 899px) { .eh-login-remember { white-space: nowrap; } }

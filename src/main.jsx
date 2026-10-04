@@ -185,6 +185,7 @@ const LoginScreen = ({ onLogin }) => {
         </div>
         {step === 'login' ? (
           <form className="eh-login-card" onSubmit={submit}>
+            <div className="eh-login-logo eh-login-logo-card" aria-hidden="true"><b>ORDO</b><span>EMPLOYEE HUB</span></div>
             <small>WITAJ PONOWNIE</small>
             <h1>Zaloguj się</h1>
             <p>Użyj identyfikatora pracownika lub firmowego adresu e-mail.</p>
@@ -206,6 +207,7 @@ const LoginScreen = ({ onLogin }) => {
           </form>
         ) : (
           <form className="eh-login-card" onSubmit={savePass}>
+            <div className="eh-login-logo eh-login-logo-card" aria-hidden="true"><b>ORDO</b><span>EMPLOYEE HUB</span></div>
             <small>PIERWSZE LOGOWANIE</small>
             <h1>Ustaw własny PIN</h1>
             <p>Hasło startowe od managera działa tylko raz. Wybierz własny PIN (4–8 cyfr).</p>
