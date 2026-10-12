@@ -1,6 +1,8 @@
+import './atmosphere-tokens.css';   // Atmosphere: jedyne źródło kolorów — ładowane pierwsze
 import './tailwind.css';
 import './workrhythm-mobile.css';
 import './ordo-hub.css';
+import { stationInk, stationFill, stationAccent } from './stations.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Calendar, Home, Clock, Menu, X, ChevronLeft, ChevronRight, LogOut, Info, Cloud, MapPin, Search, Briefcase, RefreshCw, Users, Lock, CalendarCheck2, Ban, ArrowRight, Clock3, Timer, Repeat2, ShieldCheck, MessageSquare, Check, LogIn, Coffee, History, Bell, MapPin as MapPinIcon, ChevronDown, Eye, EyeOff } from 'lucide-react';
@@ -16,15 +18,9 @@ const colors = {
   accent: { dark: '#292D32', medium: '#2674B8', light: '#2674B8', bg: '#E8F0F7' }
 };
 
-// Station color palette (matches Excel matrix sections)
-const stationColors = {
-  'PANIEROWANIE': '#7CB342', 'SMAŻENIE': '#A94455', 'KANAPKI / WRAPY': '#00A3E0',
-  'KONTROLER': '#2F5D8A', 'WSPARCIE WIECZORNE / FLEX': '#9C27B0', 'DISPATCHER': '#2674B8',
-  'PHU': '#00897B', 'DESERY / NAPOJE': '#EC407A', 'FRYTKI': '#2674B8', 'ZMYWAK': '#65717C',
-  'PREP': '#8D6E63', 'DOSTAWA': '#5C6BC0', 'MANAGER': '#292D32', 'MGR FUNKCYJNE': '#3F4A55',
-  'SZKOLENIA': '#2674B8', 'TRAINING': '#2674B8', 'INSTRUKTOR': '#00796B'
-};
-const stationColor = (s) => stationColors[(s || '').toUpperCase()] || colors.primary.medium;
+// Kolory stanowisk: te same pastelowe rodziny co w Studio i PDF (stations.js — kopia lib/stations.js ze Studio).
+// stationColor() = kolor tekstu/ikony czytelny na bieli (ink rodziny); tła: stationFill(), akcenty: stationAccent().
+const stationColor = (s) => stationInk(s);
 const rolaSzk = (s) => {
   const r = (s.rola || '').toLowerCase();
   if (r === 'instruktor' || r === 'training') return r;
@@ -99,7 +95,7 @@ const statusZamiany = (s) => {
   if (s.status === 'approved') return { txt: `Zatwierdzona — przejmuje: ${s.approvedVolunteerDisplay || s.approvedVolunteer}`, kol: '#2674B8', bg: '#E8F0F7' };
   if (s.status === 'rejected') return { txt: 'Odrzucona przez ASM', kol: '#A94455', bg: '#FAE9ED' };
   if (s.status === 'cancelled') return { txt: 'Anulowana', kol: '#65717C', bg: '#E4E8EC' };
-  return s.volunteers.length ? { txt: `Zgłoszeń: ${s.volunteers.length} — czeka na akceptację ASM`, kol: '#2674B8', bg: '#fff2e8' } : { txt: 'Otwarta — czeka na chętnych', kol: colors.primary.medium, bg: colors.primary.bgLight };
+  return s.volunteers.length ? { txt: `Zgłoszeń: ${s.volunteers.length} — czeka na akceptację ASM`, kol: '#2674B8', bg: '#FBF4E5' } : { txt: 'Otwarta — czeka na chętnych', kol: colors.primary.medium, bg: colors.primary.bgLight };
 };
 
 const calcHours = (start, end) => {
@@ -246,7 +242,7 @@ const CalendarView = ({ date, onDateChange, shifts, onDayClick, selectedDay }) =
         {days.map((item, i) => { const sh = item.current ? getShifts(item.day) : []; return (
           <button key={i} onClick={() => item.current && onDayClick(item.day === selectedDay ? null : item.day)} className={'flex flex-col items-center py-2 rounded-full ' + (!item.current ? 'text-slate-300' : '')} style={hlStyle(item)}>
             <span className="text-sm font-medium">{item.day}</span>
-            {sh.length > 0 && item.current && <div className="flex gap-0.5 mt-1">{sh.slice(0,3).map((s,j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: stationColor(s.station)}} />)}</div>}
+            {sh.length > 0 && item.current && <div className="flex gap-0.5 mt-1">{sh.slice(0,3).map((s,j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: stationAccent(s.station)}} />)}</div>}
           </button>
         ); })}
       </div>
@@ -294,9 +290,9 @@ const CoworkersModal = ({ date, list, loading, onClose }) => {
             : list.length === 0 ? (<p className="text-slate-400 text-center py-8">Nikt więcej nie pracuje tego dnia.</p>)
             : list.map((s, i) => (
               <div key={i} className="flex items-center gap-3 p-2 rounded-xl">
-                <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold shrink-0" style={{ backgroundColor: stationColor(s.station) }}>{inicjaly(s.name)}</div>
+                <div className="w-11 h-11 rounded-full flex items-center justify-center font-semibold shrink-0" style={{ backgroundColor: stationFill(s.station), color: stationInk(s.station), boxShadow: `inset 0 0 0 1.5px ${stationAccent(s.station)}` }}>{inicjaly(s.name)}</div>
                 <div className="flex-1 min-w-0"><p className="font-semibold truncate" style={{ color: colors.primary.darkest }}>{s.name}</p><p className="text-sm text-slate-500">{s.start} - {s.end}</p></div>
-                <span className="text-xs px-2 py-1 rounded font-medium shrink-0" style={{ backgroundColor: colors.primary.bg, color: stationColor(s.station) }}>{nazwaStanowiska(s)}</span>
+                <span className="text-xs px-2 py-1 rounded font-medium shrink-0" style={{ backgroundColor: stationFill(s.station), color: stationInk(s.station) }}>{nazwaStanowiska(s)}</span>
               </div>
             ))}
         </div>
@@ -310,7 +306,7 @@ const ShiftCard = ({ shift, isToday, onTeam }) => {
   const d = new Date(shift.date);
   const h = shift.hours != null ? shift.hours : calcHours(shift.start, shift.end);
   return (
-    <div className="relative rounded-xl shadow-sm p-4" style={{ backgroundColor: isToday ? colors.primary.bg : 'white', borderLeft: '4px solid ' + stationColor(shift.station) }}>
+    <div className="relative rounded-xl shadow-sm p-4" style={{ backgroundColor: isToday ? colors.primary.bg : 'white', borderLeft: '4px solid ' + stationAccent(shift.station) }}>
       {onTeam && (
         <button onClick={(e) => { e.stopPropagation(); onTeam(); }} className="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.primary.bg }} title="Współpracownicy ze zmiany">
           <Users size={18} style={{ color: colors.primary.medium }} />
@@ -712,7 +708,7 @@ const HoursPage = ({ shifts }) => {
             {Object.entries(cur.stations).sort((a,b) => b[1]-a[1]).map(([st, h]) => { const pct = (h / cur.totalHours) * 100; return (
               <div key={st} className="flex items-center gap-3">
                 <span className="text-xs font-medium w-32 truncate">{st}</span>
-                <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: pct+'%', backgroundColor: stationColor(st) }} /></div>
+                <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: pct+'%', backgroundColor: stationAccent(st) }} /></div>
                 <span className="text-sm text-slate-600 w-14 text-right">{h.toFixed(1)}h</span>
               </div>
             ); })}
@@ -777,7 +773,7 @@ const SwapsPage = ({ user, shifts, swaps, onCreate, onVolunteer, onUnvolunteer, 
               <div key={s.id} className="rounded-xl p-3 flex items-center justify-between gap-2" style={{ backgroundColor: colors.primary.bgLight }}>
                 <div><p className="text-sm font-medium" style={{ color: colors.primary.darkest }}>{s.requesterDisplay || s.requester}</p><p className="text-xs" style={{ color: colors.primary.dark }}>{opisZmiany(s.shift)}</p>{s.note && <p className="text-xs italic text-slate-400">„{s.note}"</p>}</div>
                 {czyZgloszony(s)
-                  ? <button onClick={() => onUnvolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium shrink-0" style={{ backgroundColor: '#fff2e8', color: '#2674B8' }}>Zgłoszony ✓</button>
+                  ? <button onClick={() => onUnvolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium shrink-0" style={{ backgroundColor: '#FBF4E5', color: '#2674B8' }}>Zgłoszony ✓</button>
                   : <button onClick={() => onVolunteer(s.id)} className="text-xs px-3 py-2 rounded-lg font-medium text-white shrink-0" style={{ backgroundColor: colors.primary.medium }}>Zgłoś się</button>}
               </div>
             ))}
