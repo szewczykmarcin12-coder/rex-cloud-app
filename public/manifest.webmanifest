@@ -2,8 +2,8 @@
   "name": "Atmosphere Employee Hub",
   "short_name": "Atmosphere",
   "display": "standalone",
-  "background_color": "#F7F8FA",
-  "theme_color": "#2674B8",
+  "background_color": "#F4F7FA",
+  "theme_color": "#132B46",
   "icons": [
     {
       "src": "icon-192.png",

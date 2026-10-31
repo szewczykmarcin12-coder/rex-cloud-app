@@ -1,15 +1,15 @@
-// ── Atmosphere: JEDNO przypisanie stanowisk do pastelowych rodzin kolorów ──
+// ── Atmosphere (Smoky Blue, v16): JEDNO przypisanie stanowisk do pastelowych rodzin kolorów ──
 // Używane przez Studio (grafik, siatka dnia, autoplan, model pracy, kwalifikacje), podgląd wydruku,
-// generator PDF (wartości RGB poniżej) i Employee Hub (kopia: rex-cloud-app/src/stations.js — trzymać identyczną).
-// Zasada: tło = pastel rodziny, tekst = grafit (#292D32), etykieta stanowiska zawsze widoczna;
-// akcent (kropka, obrys, legenda) rozróżnia stanowiska wewnątrz rodziny. Czerwień nie jest kolorem stanowiska.
+// generator PDF (RGB) i Employee Hub (kopia: rex-cloud-app/src/stations.js — identyczna, pilnowana testem).
+// Zasada: tło = pastel rodziny, tekst = grafit, etykieta stanowiska zawsze widoczna; akcent rodziny = cienki pasek / kropka.
+// Wartości równe tokenom --at-station-* w atmosphere-tokens.css.
 export const STATION_FAMILIES = {
-  lead:       { nazwa: 'Kierownik',          tone: 'deep',    fill: '#E9E4F4', accent: '#9C92BC', ink: '#3E3760' },
-  operations: { nazwa: 'Front / obsługa',    tone: 'mid',     fill: '#DCEBF5', accent: '#79A2C0', ink: '#2B4A5F' },
-  production: { nazwa: 'Kuchnia',            tone: 'soft',    fill: '#F8F1D2', accent: '#C9B45E', ink: '#5C5124' },
-  control:    { nazwa: 'Wsparcie / zadania', tone: 'outline', fill: '#E4E8F2', accent: '#8C9AC0', ink: '#37415E' },
-  training:   { nazwa: 'Szkolenia',          tone: 'mid',     fill: '#E8F3EE', accent: '#7FBFA6', ink: '#407362' },
-  other:      { nazwa: 'Pozostałe',          tone: 'outline', fill: '#EDF0F3', accent: '#9DA4AA', ink: '#3F4A55' },
+  lead:       { nazwa: 'Kierownik',          tone: 'deep',    fill: '#C5E3F7', accent: '#315F83', ink: '#132B46' },   // Blue Mist + Deep Navy
+  operations: { nazwa: 'Front / obsługa',    tone: 'mid',     fill: '#E2ECF3', accent: '#7FA6C2', ink: '#315F83' },   // Smoky Blue
+  production: { nazwa: 'Kuchnia',            tone: 'soft',    fill: '#FAE8DC', accent: '#B85C45', ink: '#7A3E2C' },   // Soft Apricot + Terracotta
+  control:    { nazwa: 'Wsparcie / zadania', tone: 'outline', fill: '#F5F1EA', accent: '#526270', ink: '#3E4B55' },   // Ivory + Slate
+  training:   { nazwa: 'Szkolenia',          tone: 'mid',     fill: '#EAF3ED', accent: '#3F6B55', ink: '#3F6B55' },   // sukces
+  other:      { nazwa: 'Pozostałe',          tone: 'outline', fill: '#EEF1F4', accent: '#8E9CA7', ink: '#3E4B55' },
 };
 export const STATION_FAMILY = {
   'MANAGER': 'lead', 'MGR FUNKCYJNE': 'lead',
@@ -18,8 +18,7 @@ export const STATION_FAMILY = {
   'ZMYWAK': 'control', 'PREP': 'control', 'DOSTAWA': 'control', 'WSPARCIE WIECZORNE / FLEX': 'control',
   'SZKOLENIA': 'training', 'TRAINING': 'training', 'INSTRUKTOR': 'training',
 };
-// akcent = akcent RODZINY (lawenda / błękit / piasek / stal / mięta). Stanowiska w rodzinie rozróżnia etykieta, nie kolor —
-// mniej barw na ekranie, żadna spoza tokenów --at-station-*.
+// akcent = akcent RODZINY. Stanowiska w rodzinie rozróżnia etykieta, nie kolor — mniej barw, żadna spoza palety.
 export const STATION_ACCENT = {};
 const norm = (s) => String(s || '').trim().toUpperCase().replace(/\s+/g, ' ');
 export const stationFamily = (st) => STATION_FAMILY[norm(st)] || 'other';

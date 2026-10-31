@@ -1,42 +1,65 @@
-/* Atmosphere: tokens only. Load before the application theme. */
+/* Atmosphere — Smoky Blue System Palette (v16, 17.10.2026). Jedyne źródło kolorów, promieni, odstępów i cieni.
+   Ładowany jako pierwszy arkusz w Studio i Employee Hub; wszystkie pozostałe arkusze odwołują się do tych zmiennych.
+   Zasady (Apple HIG): kolor = znaczenie, nie dekoracja • tekst zawsze grafit/łupek na jasnej powierzchni •
+   jeden kolor akcji (Deep Navy) • Smoky Blue i Blue Mist do wypełnień i zaznaczeń • Terracotta oszczędnie •
+   statusy = kolor treści + jasne tło • siatka 4/8 px • promienie 6/8/10/14 • cień tylko dla warstw uniesionych. */
 :root {
-  --at-brand-primary: #2674B8;
-  --at-brand-primary-hover: #21659F;
-  --at-brand-graphite: #292D32;
+  /* 01 — baza i hierarchia */
+  --at-brand-navy: #132B46;          /* DEEP NAVY — główny przycisk, nawigacja, silne wyróżnienia */
+  --at-brand-navy-hover: #0E2238;
+  --at-brand-smoky: #7FA6C2;         /* SMOKY BLUE — kolor marki, wypełnienia i zaznaczenia (nie jako tekst) */
+  --at-brand-mist: #C5E3F7;          /* BLUE MIST — wybrane wiersze i delikatne akcenty */
+  --at-brand-graphite: #292D32;      /* GRAPHITE — tekst główny */
+  --at-brand-slate: #526270;         /* SLATE — tekst pomocniczy */
   --at-brand-white: #FFFFFF;
-  --at-ui-text: #292D32;
-  --at-ui-text-secondary: #65717C;
-  --at-ui-canvas: #F7F8FA;
+  /* zgodność z dotychczasowymi nazwami */
+  --at-brand-primary: var(--at-brand-navy);
+  --at-brand-primary-hover: var(--at-brand-navy-hover);
+  /* 02 — ciepły kontrast (oszczędnie) */
+  --at-accent-terracotta: #B85C45;   /* ważne elementy i wykresy */
+  --at-accent-apricot: #F2C5A7;      /* ciepłe wypełnienie: etykiety, dodatkowe serie */
+  --at-ui-ivory: #F5F1EA;            /* tło alternatywne sekcji */
+  /* powierzchnie */
+  --at-ui-text: var(--at-brand-graphite);
+  --at-ui-text-secondary: var(--at-brand-slate);
+  --at-ui-canvas: #F4F7FA;
   --at-ui-surface: #FFFFFF;
-  --at-ui-sidebar: #F5F7F9;
-  --at-ui-border: #E4E8EC;
+  --at-ui-sidebar: #FFFFFF;
+  --at-ui-border: #DCE3E9;
   --at-ui-input-border: #DCE3E9;
-  --at-ui-selected: #E8F0F7;
-  --at-ui-subtle-blue: #F1F6FA;
-  --at-ui-disabled-bg: #EDF0F3;
-  --at-ui-disabled-text: #65717C;
-  --at-ui-scrim: rgba(31, 53, 72, 0.22);
-  --at-station-lead-fill: #E9E4F4;
-  --at-station-lead-accent: #9C92BC;
-  --at-station-operations-fill: #DCEBF5;
-  --at-station-operations-accent: #79A2C0;
-  --at-station-production-fill: #F8F1D2;
-  --at-station-production-accent: #C9B45E;
-  --at-station-control-fill: #E4E8F2;
-  --at-station-control-accent: #8C9AC0;
+  --at-ui-selected: #EAF2F8;         /* delikatne zaznaczenie / tło informacji */
+  --at-ui-selected-strong: var(--at-brand-mist);   /* wybrany dzień, aktywna pozycja nawigacji */
+  --at-ui-subtle-blue: #EAF2F8;
+  --at-ui-disabled-bg: #EEF1F4;
+  --at-ui-disabled-text: var(--at-brand-slate);
+  --at-ui-scrim: rgba(19, 43, 70, 0.28);
+  /* 03 — statusy: kolor treści + jasne tło */
+  --at-status-success-text: #3F6B55;  --at-status-success-fill: #EAF3ED;
+  --at-status-warning-text: #865A12;  --at-status-warning-fill: #FFF3D9;
+  --at-status-danger-text: #AD3548;   --at-status-danger-fill: #FBECEF;
+  --at-status-info-text: #315F83;     --at-status-info-fill: #EAF2F8;
+  --at-status-neutral-text: #526270;  --at-status-neutral-fill: #EEF1F4;
+  /* rodziny stanowisk (pastel + grafitowy tekst) */
+  --at-station-lead-fill: #C5E3F7;        --at-station-lead-accent: #315F83;      --at-station-lead-ink: #132B46;     /* kierownik */
+  --at-station-operations-fill: #E2ECF3;  --at-station-operations-accent: #7FA6C2; --at-station-operations-ink: #315F83; /* front */
+  --at-station-production-fill: #FAE8DC;  --at-station-production-accent: #B85C45; --at-station-production-ink: #7A3E2C; /* kuchnia */
+  --at-station-control-fill: #F5F1EA;     --at-station-control-accent: #526270;    --at-station-control-ink: #3E4B55;   /* wsparcie / zadania */
+  --at-station-training-fill: #EAF3ED;    --at-station-training-accent: #3F6B55;   --at-station-training-ink: #3F6B55;  /* szkolenia */
   --at-station-text: #292D32;
-  --at-chart-blue: #9CCBF0;
-  --at-chart-mint: #A5D8C5;
-  --at-chart-peach: #F3BF9F;
-  --at-chart-lavender: #BDB2E5;
-  --at-chart-sand: #F0DFA3;
-  --at-chart-slate: #BAC9DC;
-  --at-chart-plan-line: #2674B8;
-  --at-chart-actual-line: #8B7FAE;
-  --at-status-success-text: #407362;
-  --at-status-success-fill: #E8F3EE;
-  --at-status-warning-text: #886929;
-  --at-status-warning-fill: #FBF4E5;
-  --at-status-danger-text: #A94455;
-  --at-status-danger-fill: #FAE9ED;
+  /* wykresy */
+  --at-chart-blue: #7FA6C2;  --at-chart-mist: #C5E3F7;  --at-chart-terracotta: #B85C45;  --at-chart-peach: #F2C5A7;
+  --at-chart-info: #315F83;  --at-chart-slate: #526270; --at-chart-green: #3F6B55;
+  --at-chart-plan-line: #132B46; --at-chart-actual-line: #B85C45;
+  /* aliasy dawnych serii */
+  --at-chart-mint: #3F6B55; --at-chart-lavender: #C5E3F7; --at-chart-sand: #F2C5A7;
+  /* kształt i rytm (Apple HIG) */
+  --at-radius-sm: 6px; --at-radius-md: 8px; --at-radius-lg: 10px; --at-radius-xl: 14px; --at-radius-full: 9999px;
+  --at-space-1: 4px; --at-space-2: 8px; --at-space-3: 12px; --at-space-4: 16px; --at-space-5: 24px; --at-space-6: 32px;
+  --at-shadow-sm: 0 1px 2px rgba(19, 43, 70, 0.06);
+  --at-shadow-md: 0 6px 18px rgba(19, 43, 70, 0.10);
+  --at-shadow-lg: 0 18px 44px rgba(19, 43, 70, 0.16);
+  --at-focus-ring: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--at-brand-navy);
+  --at-control-h: 36px; --at-control-h-sm: 32px; --at-touch: 44px;
+  --at-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --at-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
